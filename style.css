@@ -347,12 +347,12 @@ body, html {
   border-top: none;
 }
 
-.card-body h5 {
+.card-body h3 {
   font-size: 1.25rem;
   line-height: 1.4;
 }
 
-.card-body h6 {
+.card-body h4 {
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.05em;
