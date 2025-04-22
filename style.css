@@ -311,7 +311,6 @@ body, html {
   
 /* projects */
 #projects {
-  background-color: #0c121e; /* deep navy/dark background */
 }
 
 #projects h2 {
@@ -322,7 +321,14 @@ body, html {
   font-size: 1rem;
   max-width: 600px;
   margin: 0 auto;
-  color: #c0c0c0;
+  color: #ffffff;
+}
+
+.project-description{
+  font-size: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+  color: #ffffff;
 }
 
 .card {
