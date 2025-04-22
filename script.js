@@ -47,32 +47,7 @@ container.addEventListener("mouseleave", () => {
 
 
 
-// projects
-// Auto-Rotate Cards Clockwise
-let scrollIndex = 0;
-setInterval(() => {
-  const cards = document.querySelectorAll(".project-card");
-  scrollIndex = (scrollIndex + 1) % cards.length;
-  cards.forEach((card, i) => {
-    const offset = (i - scrollIndex + cards.length) % cards.length;
-    card.style.order = offset;
-  });
-}, 3000);
 
-// Flip cards on scroll
-const cards = document.querySelectorAll(".card-inner");
-
-window.addEventListener("scroll", () => {
-  const trigger = window.innerHeight * 0.8;
-  cards.forEach((card) => {
-    const cardTop = card.getBoundingClientRect().top;
-    if (cardTop < trigger) {
-      card.style.transform = "rotateY(180deg)";
-    } else {
-      card.style.transform = "rotateY(0deg)";
-    }
-  });
-});
 
 
 
