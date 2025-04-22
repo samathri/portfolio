@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Samathri Abhayapala Portfolio</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <!-- Swiper CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Hamburger Menu -->
+  <div class="hamburger" id="hamburger">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+
+ <!-- Slide-in Navigation -->
+<nav class="slide-nav" id="slideNav">
+    <button id="closeBtn" class="close-btn">&times;</button>
+    <a href="#about">About Me</a>
+    <a href="#projects">Projects</a>
+    <a href="#contact">Contact</a>
+  </nav>
+  
+
+  <!-- Centered Top Nav (Desktop) -->
+  <nav class="custom-nav">
+    <a href="#about">About Me</a>
+    <a href="#projects">Projects</a>
+    <a href="#contact">Contact</a>
+  </nav>
+
+  <!-- Hero Section -->
+  <div class="hero-container">
+    <div class="portfolio-text">PORTFOLIO</div>
+
+    <!-- Hanging 3D Spinning Name Tag -->
+    <div class="string-holder">
+      <div class="string-line"></div>
+      <div class="card-container">
+        <div class="name-tag">
+          <div class="front">
+            <img src="img/image 2.jpg" alt="profile" />
+            <div class="tag-text">Samathri Abhayapala<br />Front End Developer</div>
+          </div>
+          <div class="back">
+            ♠️ Ace of Code
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content" id="mainContent">
+    <section id="about" class="section">
+        <section class="about-me-section">
+            <div class="image-container">
+              <img src="img/icon 2.png" alt="Robot" class="robot-image" />
+            </div>
+            <div class="text-container">
+              <h2>A LITTLE<br><span>ABOUT ME</span></h2>
+              <p>
+                🚀 I’m a passionate and versatile front-end developer with a flair for crafting responsive, accessible, and visually compelling web experiences. With over 5 years in tech and digital content, I bring a unique blend of development expertise and content strategy to every project. Whether it’s coding sleek interfaces, collaborating on UI/UX, or optimizing CMS content for global brands, I thrive on solving problems and building seamless digital journeys.
+              </p>
+              <button class="btn">Download Resume</button>
+            </div>
+          </section>
+          
+    </section>
+
+    <section id="projects" class="section">
+        <section class="projects-section">
+            <div class="section-header">
+              <h2>Projects</h2>
+              <p>
+                Every project is a blend of design, detail, and development. Explore the
+                interfaces I’ve shaped to be both beautiful and functional.
+              </p>
+            </div>
+          
+            <div class="slider-container" id="slider">
+              <!-- Repeat this block for each card -->
+              <div class="project-card">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="card-art">🎴</div>
+                  </div>
+                  <div class="card-back">
+                    <img src="img/icon 1.png" alt="Project 1" />
+                    <p>Portfolio Website</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="project-card">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="card-art">🎴</div>
+                  </div>
+                  <div class="card-back">
+                    <img src="img/icon 1.png" alt="Project 1" />
+                    <p>Portfolio Website</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="project-card">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="card-art">🎴</div>
+                  </div>
+                  <div class="card-back">
+                    <img src="img/icon 1.png" alt="Project 1" />
+                    <p>Portfolio Website</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="project-card">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="card-art">🎴</div>
+                  </div>
+                  <div class="card-back">
+                    <img src="img/icon 1.png" alt="Project 1" />
+                    <p>Portfolio Website</p>
+                  </div>
+                </div>
+              </div>
+          
+              <div class="project-card">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="card-art">🃏</div>
+                  </div>
+                  <div class="card-back">
+                    <img src="img/icon 1.png" alt="Project 2" />
+                    <p>Music App UI</p>
+                  </div>
+                </div>
+              </div>
+          
+              <!-- Add more cards as needed -->
+            </div>
+          </section>
+          
+    </section>
+
+    <section id="contact" class="section">
+        <section id="contact" class="contact-section">
+            <div class="container">
+              <h2>Contact</h2>
+              <p class="contact-description">
+                Let’s bring your ideas to life! Whether you want to collaborate, ask a question, or just say hi — drop me a message.
+              </p>
+              <form class="contact-form">
+                <div class="form-group">
+                  <input type="text" placeholder="Your Name" required />
+                </div>
+                <div class="form-group">
+                  <input type="email" placeholder="Your Email" required />
+                </div>
+                <div class="form-group">
+                  <textarea placeholder="Your Message" rows="5" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Send Message</button>
+              </form>
+            </div>
+          </section>
+          
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+  <!-- Swiper JS -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+
+</body>
+</html>
