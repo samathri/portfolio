@@ -4,6 +4,7 @@ body, html {
     overflow-x: hidden;
     scroll-behavior: smooth;
     background-color: black !important;
+    text-align: justify;
   }
 
   h3{
@@ -32,9 +33,10 @@ body, html {
 
   p{
     margin: 0;
+    margin-bottom: 15px;
     padding: 0;
     font-size: 16px;
-    color: #000;
+    color: #ffffff;
   }
   
   
@@ -51,7 +53,7 @@ body, html {
   /* Top Centered Nav */
   .custom-nav {
     position: absolute;
-    top: 10px;
+    top: 30px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
@@ -72,7 +74,7 @@ body, html {
     gap: 4px;
     position: absolute;
     right: 20px;
-    top: 10px;
+    top: 20px;
     z-index: 20;
     cursor: pointer;
   }
@@ -121,7 +123,7 @@ body, html {
   
   /* Portfolio Text */
   .portfolio-text {
-    font-size: 12vw;
+    font-size: 14vw;
     text-align: center;
     font-weight: bold;
     height: 100vh;
@@ -129,6 +131,15 @@ body, html {
     justify-content: center;
     align-items: center;
   }
+
+  .horizontal-list {
+    display: flex;
+    gap: 1rem;
+    list-style: square;
+    padding-left: 0;
+    margin-bottom: 0;
+  }
+  
   
   /* String and Swinging Name Tag */
   .string-holder {
@@ -143,7 +154,7 @@ body, html {
   }
   
   .string-line {
-    width: 2px;
+    width: 3px;
     height: 200px;
     background-color: #aaa;
   }
@@ -168,12 +179,17 @@ body, html {
     background-color: white;
     border-radius: 10px;
     backface-visibility: hidden;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.8);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 10px;
+    box-shadow:
+      0 4px 6px rgba(255, 255, 255, 0.3),
+      0 8px 20px rgba(255, 255, 255, 0.3),
+      inset 0 0 0 2px rgba(255, 255, 255, 0.5);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
   
   .name-tag .front img {
@@ -253,6 +269,7 @@ body, html {
     }
   }
   
+  
 
   /* about me */
   .about-me-section {
@@ -292,14 +309,16 @@ body, html {
   
   .text-container h2 {
     font-size: 2.5rem;
-    color: #27bcbc;
+    color: #ffffff;
     margin-bottom: 20px;
     font-weight: bold;
     line-height: 1.2;
   }
   
   .text-container span {
+    color: #27bcbc;
     display: block;
+    margin-left: 10px;
   }
   
   .text-container p {
@@ -311,7 +330,8 @@ body, html {
   
   .btn {
     padding: 12px 24px;
-    background-color: #27bcbc;
+    background-color: transparent;
+    border: 2px solid white !important;
     border: none;
     color: white;
     font-weight: bold;
@@ -321,7 +341,8 @@ body, html {
   }
   
   .btn:hover {
-    background-color: #2ad8d8;
+    background-color: #ffffff;
+    color: #000;
   }
   
   @media (max-width: 768px) {
@@ -339,6 +360,8 @@ body, html {
       width: 220px;
     }
   }
+
+
   
   
 /* projects */
@@ -355,11 +378,13 @@ body, html {
 }
 
 .project-title {
-  color: #000;
+  color: #ffffff;
+  text-transform: uppercase;
+  margin-bottom: 10px;
 }
 
 .project-list {
-  color: #000;
+  color: #ffffff;
 }
 
 .project-card {
@@ -382,13 +407,51 @@ body, html {
   }
 }
 
+.project-content{
+  background: linear-gradient(to bottom, #0d0d0d, #2c2c2d);
+}
+
+.project-shadow {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.3s ease;
+}
+
+.project-shadow:hover {
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+}
+
+/* Optional for responsiveness, though shadow usually doesn’t need special handling */
+@media (max-width: 767.98px) {
+  .project-shadow {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.btn-visit{
+  background-color: #fff;
+  color: #000;
+}
+
+.btn-visit:hover{
+  background-color: transparent;
+  color: #fff;
+  border: 2px solid #fff;
+}
+
+.btn-view{
+  background-color: transparent;
+  color: #fff;
+  border: 2px solid #fff;
+}
+
+
+
   
 /* contact */
 
 .contact-section {
-    background: linear-gradient(to bottom, #0d0d0d, #2c2c2d);
     color: #fff;
-    padding: 80px 20px;
+    padding: 0px 20px;
     text-align: center;
     border-radius: 50px;
   }
@@ -459,4 +522,12 @@ body, html {
       grid-template-columns: 1fr;
     }
   }
+
+
+  .btn-submit{
+    background-color: transparent !important;
+    color: #fff !important;
+    border: 2px solid #fff !important;
+  }
+  
   
