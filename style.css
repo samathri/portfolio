@@ -370,19 +370,29 @@ body, html {
 }
 
 .btn-dark {
-  background-color: #0c121e;
+  background-color: #000000;
   border: none;
 }
 
 .btn-outline-dark {
-  border: 2px solid #0c121e;
+  border: 2px solid #000000;
   background-color: transparent;
-  color: #0c121e;
+  color: #000000;
 }
 
 .btn-outline-dark:hover {
-  background-color: #0c121e;
+  background-color: #444444;
   color: white;
+}
+
+.Features-list{
+  font-size: 14px;
+}
+
+.project-description {
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 1rem;
 }
 
 
