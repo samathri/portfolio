@@ -53,7 +53,7 @@ body, html {
   /* Top Centered Nav */
   .custom-nav {
     position: fixed;
-    top: 0;
+    top: 30px;
     left: 0;
     width: 100%;
     z-index: 1000;
@@ -71,8 +71,10 @@ body, html {
   
 
   .custom-nav.scrolled {
+    padding: 20px 0 !important;
+
     background-color: rgba(0, 0, 0, 0.8); /* full-width bar */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(6px); /* subtle glass effect */
   }
   
@@ -379,6 +381,62 @@ body, html {
   }
 
 
+  /* skills */
+  .skills-section {
+    padding: 80px 20px;
+    overflow: hidden;
+    color: white;
+  }
+
+  .skill-title {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    color: #ffffff;
+    font-weight: bold;
+  }
+  
+  .skills-marquee-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  .skills-marquee-track {
+    display: flex;
+    width: max-content;
+    animation: scroll-left 30s linear infinite;
+    gap: 40px;
+  }
+  
+  .skill-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    font-size: 1rem;
+    padding: 10px 20px;
+    white-space: nowrap;
+    background-color: rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    color: white;
+    min-width: max-content;
+  }
+  
+  .skill-item img {
+    width: 28px;
+    height: 28px;
+  }
+  
+  @keyframes scroll-left {
+    0% {
+      transform: translateX(0%);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+  
+
   
   
 /* projects */
@@ -429,21 +487,6 @@ body, html {
   background: linear-gradient(to bottom, #0d0d0d, #2c2c2d);
 }
 
-.project-shadow {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  transition: box-shadow 0.3s ease;
-}
-
-.project-shadow:hover {
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
-}
-
-/* Optional for responsiveness, though shadow usually doesn’t need special handling */
-@media (max-width: 767.98px) {
-  .project-shadow {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-  }
-}
 
 .btn-visit{
   background-color: #fff;
