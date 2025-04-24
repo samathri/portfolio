@@ -30,6 +30,30 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 
+  // on scroll
+  let lastScrollTop = 0;
+  const navbar = document.querySelector(".custom-nav");
+
+  window.addEventListener("scroll", function () {
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+    if (scrollTop > lastScrollTop) {
+      // Scrolling Down
+      navbar.style.top = "-100px"; // hide navbar
+    } else {
+      // Scrolling Up
+      navbar.style.top = "0"; // show navbar
+      navbar.classList.add("scrolled");
+    }
+
+    lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // avoid negative values
+  });
+
+
+
+  
+
+
 
 // about me icons
 const robot = document.querySelector(".robot-image");
