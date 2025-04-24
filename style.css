@@ -4,7 +4,7 @@ body, html {
     overflow-x: hidden;
     scroll-behavior: smooth;
     background-color: black !important;
-    text-align: justify;
+    text-align: left;
   }
 
   h3{
@@ -385,6 +385,7 @@ body, html {
 
 .project-list {
   color: #ffffff;
+  white-space: normal; /* optional, to make sure long words wrap */
 }
 
 .project-card {
