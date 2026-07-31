@@ -53,25 +53,25 @@ const profile = {
 const directions = {
   top: {
     label: 'Skills',
-    action: 'Run Up',
+    action: '↑',
     title: 'Skill Control Room',
     subtitle: 'A compact map of the AI prompt engineering capabilities I use.',
   },
   right: {
     label: 'Projects',
-    action: 'Run Right',
+    action: '→',
     title: 'Project Gallery',
     subtitle: 'The avatar reached the project side. Here are selected builds and case-study ideas.',
   },
   bottom: {
     label: 'Contact',
-    action: 'Run Down',
+    action: '↓',
     title: 'Contact Terminal',
     subtitle: 'The direct path for project inquiries, collaborations, and AI workflow work.',
   },
   left: {
     label: 'About',
-    action: 'Run Left',
+    action: '←',
     title: 'About Signal',
     subtitle: 'A short profile of what I do and how I think about AI systems.',
   },
@@ -89,11 +89,16 @@ function App() {
   const [motion, setMotion] = useState(null);
   const [incomingDirection, setIncomingDirection] = useState('right');
   const [hideUi, setHideUi] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('portfolio-theme') || 'dark');
 
   useEffect(() => {
     const timer = setTimeout(() => setIntroDone(true), 900);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('portfolio-theme', theme);
+  }, [theme]);
 
   const goTo = (direction) => {
     if (motion) return;
@@ -122,14 +127,19 @@ function App() {
       setMotion({ direction, phase: 'running' });
     }, 900);
 
+    // Start revealing the destination while the avatar is still running.
+    // Keeping the runner in its running phase makes both movements overlap
+    // instead of swapping screens after the animation has already finished.
     setTimeout(() => {
       setIncomingDirection(direction);
       setView(direction);
-      setMotion({ direction, phase: 'entering' });
-    }, 2700);
+    }, 1900);
 
     setTimeout(() => {
       setHideUi(false);
+    }, 1960);
+
+    setTimeout(() => {
       setMotion(null);
     }, 3150);
   };
@@ -154,7 +164,7 @@ function App() {
   const showRunner = motion && ['turning', 'running', 'opening'].includes(motion.phase);
 
   return (
-    <main className={`app ${introDone ? 'ready' : 'intro'} ${motionClass} ${hideUi ? 'hide-ui' : ''} from-${incomingDirection}`}>
+    <main className={`app theme-${theme} ${introDone ? 'ready' : 'intro'} ${motionClass} ${hideUi ? 'hide-ui' : ''} from-${incomingDirection}`}>
       <div className="grid-floor" />
       <div className="ambient ambient-a" />
       <div className="ambient ambient-b" />
@@ -163,8 +173,19 @@ function App() {
         {view === 'home' ? <HomeScreen goTo={goTo} /> : <DetailScreen view={view} goHome={goHome} />}
       </div>
 
+      <button
+        className="theme-toggle"
+        type="button"
+        onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
+        aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      >
+        <span>{theme === 'dark' ? '☀' : '☾'}</span>
+        {theme === 'dark' ? 'Light' : 'Dark'}
+      </button>
+
       {showRunner && (
         <div className={`runner runner-${motion.phase} runner-${motion.direction}`}>
+          <div className="runner-trail" aria-hidden="true"><i /><i /><i /></div>
           <ThreeAvatar direction={motion.direction} running={motion.phase === 'running'} />
         </div>
       )}
@@ -182,16 +203,17 @@ function HomeScreen({ goTo }) {
       </div>
 
       <div className="avatar-map">
-        <div className="route route-x" />
-        <div className="route route-y" />
-
+        <div className="game-hud">
+          <span><i /> PORTFOLIO QUEST</span>
+          <strong>Choose a portal</strong>
+        </div>
         <DirectionButton direction="top" goTo={goTo} />
         <DirectionButton direction="right" goTo={goTo} />
         <DirectionButton direction="bottom" goTo={goTo} />
         <DirectionButton direction="left" goTo={goTo} />
 
         <button className="core-button" onClick={() => goTo('center')} aria-label="Open works">
-          <ThreeAvatar direction="front" running={false} />
+          <ThreeAvatar direction="front" running={false} talking />
         </button>
       </div>
 
@@ -212,8 +234,10 @@ function DirectionButton({ direction, goTo }) {
 
   return (
     <button className={`direction direction-${direction}`} onClick={() => goTo(direction)}>
-      <span>{item.action}</span>
-      {item.label}
+      <span className="portal-ring" aria-hidden="true" />
+      <span className="direction-symbol">{item.action}</span>
+      <strong>{item.label}</strong>
+      <small>Enter portal</small>
     </button>
   );
 }
