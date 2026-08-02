@@ -4,9 +4,20 @@ import { destinations } from './content.js';
 
 const disposeTree = (root) => root.traverse((node) => {
   node.geometry?.dispose?.();
-  if (Array.isArray(node.material)) node.material.forEach((item) => item.dispose());
-  else node.material?.dispose?.();
+  if (Array.isArray(node.material)) node.material.forEach((item) => { item.map?.dispose?.(); item.dispose(); });
+  else { node.material?.map?.dispose?.(); node.material?.dispose?.(); }
 });
+
+function makePlanetFocusTexture(accent) {
+  const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, 256, 256);
+  ctx.strokeStyle = accent; ctx.lineWidth = 5; ctx.shadowColor = accent; ctx.shadowBlur = 22;
+  ctx.beginPath(); ctx.arc(128, 128, 105, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 2; ctx.globalAlpha = .65; ctx.setLineDash([10, 12]);
+  ctx.beginPath(); ctx.arc(128, 128, 116, 0, Math.PI * 2); ctx.stroke();
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
 
 function makeShip() {
   const ship = new THREE.Group();
@@ -46,11 +57,11 @@ function makeAstronaut() {
   group.visible = false; group.scale.setScalar(0.75); return group;
 }
 
-export default function SpaceScene({ progress, selected, journey, quality, reducedMotion, onPlanetClick, onPlanetHover, onJourneyDone }) {
+export default function SpaceScene({ progress, selected, journey, quality, reducedMotion, focusedPlanetId, onPlanetClick, onPlanetHover, onJourneyDone }) {
   const mountRef = useRef(null);
-  const stateRef = useRef({ progress, selected, journey, quality, reducedMotion });
+  const stateRef = useRef({ progress, selected, journey, quality, reducedMotion, focusedPlanetId });
   const callbackRef = useRef({ onPlanetClick, onPlanetHover, onJourneyDone });
-  useEffect(() => { stateRef.current = { progress, selected, journey, quality, reducedMotion }; }, [progress, selected, journey, quality, reducedMotion]);
+  useEffect(() => { stateRef.current = { progress, selected, journey, quality, reducedMotion, focusedPlanetId }; }, [progress, selected, journey, quality, reducedMotion, focusedPlanetId]);
   useEffect(() => { callbackRef.current = { onPlanetClick, onPlanetHover, onJourneyDone }; }, [onPlanetClick, onPlanetHover, onJourneyDone]);
 
   useEffect(() => {
@@ -83,9 +94,10 @@ export default function SpaceScene({ progress, selected, journey, quality, reduc
     const planetMeshes = [];
     destinations.forEach((data, index) => {
       const group = new THREE.Group(); group.position.set(...data.position); group.userData = data;
-      const sphere = new THREE.Mesh(new THREE.SphereGeometry(data.size, quality === 'low' ? 24 : 48, quality === 'low' ? 16 : 32), new THREE.MeshStandardMaterial({ color: data.color, roughness: 0.72, metalness: 0.08, emissive: data.color, emissiveIntensity: 0.08 }));
+      const sphere = new THREE.Mesh(new THREE.SphereGeometry(data.size, quality === 'low' ? 24 : 48, quality === 'low' ? 16 : 32), new THREE.MeshStandardMaterial({ color: data.color, roughness: 0.72, metalness: 0.08, emissive: data.color, emissiveIntensity: 0.08 })); sphere.name = 'planetSurface';
       sphere.userData = data; group.add(sphere); planetMeshes.push(sphere);
       const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(data.size * 1.09, 32, 22), new THREE.MeshBasicMaterial({ color: data.accent, transparent: true, opacity: 0.1, side: THREE.BackSide })); atmosphere.name = 'atmosphere'; group.add(atmosphere);
+      const focusRing = new THREE.Sprite(new THREE.SpriteMaterial({ map: makePlanetFocusTexture(data.accent), color: '#ffffff', transparent: true, opacity: 0, depthWrite: false, depthTest: false })); focusRing.name = 'focusRing'; focusRing.scale.setScalar(data.size * 2.72); group.add(focusRing);
       if (index === 2 || index === 5) {
         const ring = new THREE.Mesh(new THREE.RingGeometry(data.size * 1.35, data.size * 1.75, 64), new THREE.MeshBasicMaterial({ color: data.accent, transparent: true, opacity: 0.34, side: THREE.DoubleSide })); ring.rotation.x = Math.PI / 2.25; group.add(ring);
       }
@@ -197,7 +209,18 @@ export default function SpaceScene({ progress, selected, journey, quality, reduc
       const moving = Math.abs(targetZ - ship.position.z) > .08 || state.journey;
       ship.children.filter((item) => item.name === 'engineGlow').forEach((glow) => { glow.scale.y = 0.75 + (moving ? Math.sin(now * .02) * .18 + .65 : .05); glow.material.opacity = moving ? .9 : .35; });
       scene.children.forEach((object) => {
-        if (object.userData?.id) { object.rotation.y += dt * .13; const atm = object.getObjectByName('atmosphere'); if (atm) atm.scale.setScalar(object.userData.id === hovered ? 1.13 + Math.sin(now*.004)*.025 : 1); }
+        if (object.userData?.id) {
+          object.rotation.y += dt * .13;
+          const focused = object.userData.id === (state.focusedPlanetId || hovered);
+          const popScale = focused ? 1.1 + Math.sin(now * .004) * .012 : 1;
+          object.scale.setScalar(object.scale.x + (popScale - object.scale.x) * .09);
+          const atm = object.getObjectByName('atmosphere');
+          if (atm) { const atmosphereScale = focused ? 1.13 + Math.sin(now*.004)*.025 : 1; atm.scale.setScalar(atm.scale.x + (atmosphereScale - atm.scale.x) * .12); atm.material.opacity += ((focused ? .24 : .1) - atm.material.opacity) * .12; }
+          const focusRing = object.getObjectByName('focusRing');
+          if (focusRing) { focusRing.material.opacity += ((focused ? .95 : 0) - focusRing.material.opacity) * .14; focusRing.rotation.z -= dt * .18; }
+          const surface = object.getObjectByName('planetSurface');
+          if (surface) surface.material.emissiveIntensity += ((focused ? .24 : .08) - surface.material.emissiveIntensity) * .1;
+        }
       });
       stars.position.z = (state.progress * 6) % 8;
       if (astronaut.visible && !state.reducedMotion) astronaut.children.forEach((part) => { if (part.name?.startsWith('arm') || part.name?.startsWith('leg')) part.rotation.x = Math.sin(now * .007) * (part.name.endsWith('L') ? 0.28 : -0.28); });

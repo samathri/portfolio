@@ -131,9 +131,9 @@
 .flight-direction b:first-child{animation:cueUp 1.35s ease-in-out infinite}
 .flight-direction b:last-child{animation:cueDown 1.35s ease-in-out infinite}
 .flight-guide p em{color:var(--cyan);font-style:normal;margin:0 5px}
-.planet-tooltip{animation:planetRangeIn .38s ease both;backdrop-filter:blur(12px)}
+.planet-tooltip{animation:planetRangeIn .38s ease both;backdrop-filter:blur(12px);border:1px solid color-mix(in srgb,var(--cyan) 42%,transparent);border-left:3px solid var(--cyan);box-shadow:0 0 0 1px #071b2977,0 16px 46px #0007,0 0 28px #58e6ff12}
 .planet-tooltip p b{color:#effaff;font-weight:600}
-.planet-tooltip.is-nearby{border-left-color:#5dffc2;background:linear-gradient(90deg,#081a29ed,rgba(8,26,41,.12))}
+.planet-tooltip.is-nearby{border-color:#5dffc255;border-left-color:#5dffc2;background:linear-gradient(90deg,#081a29ed,rgba(8,26,41,.12));box-shadow:0 0 0 1px #5dffc215,0 16px 46px #0007,0 0 30px #5dffc214}
 .planet-tooltip.is-nearby small{color:#5dffc2}
 
 .surface-scroll-cue{position:absolute;z-index:4;right:26px;bottom:66px;display:grid;grid-template-columns:auto auto;gap:7px 13px;align-items:center;padding:10px 12px;border:1px solid var(--line);background:#020813b8;backdrop-filter:blur(9px);pointer-events:none}
@@ -164,3 +164,18 @@
 }
 
 @keyframes planetRangeMobileIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+
+/* Keep the touch-friendly planet card clear of the mobile header. */
+@media(max-width:768px){
+  .planet-tooltip{left:auto;right:14px;top:auto;bottom:clamp(170px,28vh,240px);width:min(260px,72vw);padding:14px 16px;transform:none;animation:planetRangeSideIn .38s ease both}
+  .planet-tooltip strong{font-size:19px;margin:5px 0 3px}
+  .planet-tooltip p{font-size:10px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .planet-tooltip span{font-size:7px;line-height:1.45}
+}
+
+@media(max-width:430px){
+  .planet-tooltip{left:auto;right:10px;top:auto;bottom:clamp(155px,26vh,220px);width:min(245px,76vw);padding:12px 14px}
+  .planet-tooltip p{display:-webkit-box;font-size:9px}
+}
+
+@keyframes planetRangeSideIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
