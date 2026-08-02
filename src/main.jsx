@@ -54,7 +54,10 @@ function App() {
     return () => { window.removeEventListener('wheel', onWheel); window.removeEventListener('keydown', onKey); };
   }, [started, journey, landed, fallback, returnToSpace]);
 
-  const nearest = destinations.reduce((best, item, index) => Math.abs(progress - index / (destinations.length - 1)) < best.distance ? { item, distance: Math.abs(progress - index / (destinations.length - 1)) } : best, { item: destinations[0], distance: Infinity }).item;
+  const nearestMatch = destinations.reduce((best, item, index) => Math.abs(progress - index / (destinations.length - 1)) < best.distance ? { item, distance: Math.abs(progress - index / (destinations.length - 1)) } : best, { item: destinations[0], distance: Infinity });
+  const nearest = nearestMatch.item;
+  const nearbyPlanet = nearestMatch.distance <= .065 ? nearestMatch.item : null;
+  const indicatedPlanet = hovered || nearbyPlanet;
 
   const submitContact = (event) => {
     event.preventDefault(); setFormState('loading');
@@ -80,8 +83,8 @@ function App() {
 
       {!started && <Intro onStart={() => setStarted(true)} onQuickView={() => setFallback(true)} />}
 
-      {started && !landed && !journey && <div className="flight-guide"><span>SCROLL</span><i /><p>Navigate the system</p></div>}
-      {hovered && !journey && !landed && <div className="planet-tooltip"><small>{hovered.name}</small><strong>{hovered.section}</strong><p>{hovered.tagline}</p><span>Click to initiate landing</span></div>}
+      {started && !landed && !journey && <div className="flight-guide"><span>SCROLL TO FLY</span><div className="flight-direction"><b>↑</b><b>↓</b></div><p>UP: BACK <em>•</em> DOWN: FORWARD</p></div>}
+      {started && indicatedPlanet && !journey && !landed && <div className={`planet-tooltip ${hovered ? 'is-hovered' : 'is-nearby'}`}><small>{hovered ? 'TARGET ACQUIRED' : 'ENTERING PLANET RANGE'}</small><strong>{indicatedPlanet.name}</strong><p><b>{indicatedPlanet.section}</b> — {indicatedPlanet.tagline}</p><span>Click or tap to initiate landing</span></div>}
 
       {(mapOpen || menuOpen) && <button className="scrim" onClick={() => { setMapOpen(false); setMenuOpen(false); }} aria-label="Close panel" />}
       <MissionMap open={mapOpen} selected={selected} onSelect={beginJourney} onClose={() => setMapOpen(false)} />
@@ -145,6 +148,7 @@ function SectionOverlay({ section, onBack, formState, onSubmit }) {
     <PlanetExplorer color={section.color} accent={section.accent} progress={walk} moving={moving} reducedMotion={reducedMotion} sectionId={section.id} items={section.cards} />
     <header className="surface-hud"><button onClick={onBack}>← Launch to space</button><div><small>PLANETARY EXPEDITION // {section.name}</small><strong>{section.section}</strong></div><span>{Math.round(walk * 100)}M TRAVELED</span></header>
     <aside className="surface-brief"><small>MISSION OBJECTIVE</small><h2>{section.heading}</h2><p>{section.tagline}</p><div><i /> Scroll to run • Move pointer up for a higher view</div></aside>
+    <div className="surface-scroll-cue" role="note" aria-label="Scroll up to move backward. Scroll down to move forward."><small>SCROLL / SWIPE</small><span className="cue-back"><i>↑</i><b>BACK</b></span><span className="cue-forward"><i>↓</i><b>FORWARD</b></span></div>
     <div ref={discoveryRef} className={`discovery-stack ${section.id === 'about' ? 'story-carousel' : ''}`}>{discoveries.map((item, index) => {
       const threshold = (index + .22) / discoveries.length; const visible = section.id === 'about' || walk >= threshold - .12;
       const relative = (index - reached + discoveries.length) % discoveries.length;

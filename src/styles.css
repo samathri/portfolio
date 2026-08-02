@@ -124,3 +124,43 @@
   .hud-top nav button:first-child{min-width:82px;font-size:7px}
   .hud-top nav .icon-button:last-child{display:none!important}
 }
+
+/* Direction guidance and automatic planet-proximity identification. */
+.flight-direction{height:48px;display:grid;align-content:space-between;margin:8px 0 5px}
+.flight-direction b{display:block;color:var(--cyan);font:500 18px DM Mono;line-height:1;text-shadow:0 0 13px var(--cyan)}
+.flight-direction b:first-child{animation:cueUp 1.35s ease-in-out infinite}
+.flight-direction b:last-child{animation:cueDown 1.35s ease-in-out infinite}
+.flight-guide p em{color:var(--cyan);font-style:normal;margin:0 5px}
+.planet-tooltip{animation:planetRangeIn .38s ease both;backdrop-filter:blur(12px)}
+.planet-tooltip p b{color:#effaff;font-weight:600}
+.planet-tooltip.is-nearby{border-left-color:#5dffc2;background:linear-gradient(90deg,#081a29ed,rgba(8,26,41,.12))}
+.planet-tooltip.is-nearby small{color:#5dffc2}
+
+.surface-scroll-cue{position:absolute;z-index:4;right:26px;bottom:66px;display:grid;grid-template-columns:auto auto;gap:7px 13px;align-items:center;padding:10px 12px;border:1px solid var(--line);background:#020813b8;backdrop-filter:blur(9px);pointer-events:none}
+.surface-scroll-cue>small{grid-column:1/-1;text-align:center;font:500 7px DM Mono;letter-spacing:.14em;color:#8398a5}
+.surface-scroll-cue span{display:grid;justify-items:center;gap:3px}
+.surface-scroll-cue i{color:var(--accent);font:500 18px DM Mono;font-style:normal;line-height:1;text-shadow:0 0 11px var(--accent)}
+.surface-scroll-cue b{font:500 6px DM Mono;letter-spacing:.1em;color:#b8c9d2}
+.surface-scroll-cue .cue-back i{animation:cueUp 1.35s ease-in-out infinite}
+.surface-scroll-cue .cue-forward i{animation:cueDown 1.35s ease-in-out infinite}
+
+@keyframes cueUp{0%,100%{transform:translateY(3px);opacity:.45}50%{transform:translateY(-4px);opacity:1}}
+@keyframes cueDown{0%,100%{transform:translateY(-3px);opacity:.45}50%{transform:translateY(4px);opacity:1}}
+@keyframes planetRangeIn{from{opacity:0;transform:translate(18px,-45%)}to{opacity:1;transform:translate(0,-45%)}}
+
+@media(max-width:768px){
+  .planet-tooltip{display:block;position:absolute;left:14px;right:14px;top:76px;bottom:auto;width:auto;transform:none;padding:11px 14px;border:1px solid var(--line);border-left:3px solid var(--cyan);background:#04101dde;box-shadow:0 12px 35px #0007;animation:planetRangeMobileIn .35s ease both}
+  .planet-tooltip small{font-size:7px}.planet-tooltip strong{font-size:16px;margin:4px 0 2px}.planet-tooltip p{margin:0;font-size:10px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.planet-tooltip span{display:block;margin-top:5px;font-size:7px}
+  .flight-guide{bottom:54px}.flight-direction{height:42px;margin:5px 0}.flight-direction b{font-size:15px}.flight-guide p{font-size:7px;white-space:nowrap}
+  .surface-scroll-cue{right:12px;top:278px;bottom:auto;padding:8px 9px;gap:5px 10px;background:#020813cf}
+  .planet-surface.has-explored .surface-scroll-cue{top:132px}
+}
+
+@media(max-width:430px){
+  .planet-tooltip{top:68px;left:10px;right:10px}
+  .planet-tooltip p{display:block;font-size:9px}
+  .surface-scroll-cue{top:270px}
+  .planet-surface.has-explored .surface-scroll-cue{top:128px}
+}
+
+@keyframes planetRangeMobileIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
