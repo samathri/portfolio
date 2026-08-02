@@ -179,3 +179,18 @@
 }
 
 @keyframes planetRangeSideIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+
+/* Smaller lower-right proximity card so it never covers the mobile rocket. */
+@media(max-width:768px){
+  .planet-tooltip{right:12px;bottom:clamp(125px,20vh,175px);width:min(235px,64vw);padding:10px 12px}
+  .planet-tooltip small{font-size:6px;letter-spacing:.12em}
+  .planet-tooltip strong{font-size:16px;line-height:1.15;margin:4px 0 3px}
+  .planet-tooltip p{font-size:8px;line-height:1.35;-webkit-line-clamp:2}
+  .planet-tooltip span{margin-top:4px;font-size:6px;line-height:1.35}
+}
+
+@media(max-width:430px){
+  .planet-tooltip{right:9px;bottom:145px;width:min(218px,66vw);padding:9px 11px}
+  .planet-tooltip strong{font-size:15px}
+  .planet-tooltip p{font-size:8px}
+}

@@ -19,14 +19,36 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [quality, setQuality] = useState(() => localStorage.getItem('promptverse-quality') || 'medium');
   const [sound, setSound] = useState(() => localStorage.getItem('promptverse-sound') === 'on');
+  const [audioReady, setAudioReady] = useState(0);
   const [fallback, setFallback] = useState(false);
   const [formState, setFormState] = useState('idle');
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
   const touchStart = useRef(null);
+  const audioContextRef = useRef(null);
+
+  const ensureAudio = useCallback(() => {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return null;
+    if (!audioContextRef.current || audioContextRef.current.state === 'closed') { audioContextRef.current = new AudioContext(); setAudioReady((value) => value + 1); }
+    audioContextRef.current.resume?.();
+    return audioContextRef.current;
+  }, []);
+
+  const toggleSound = useCallback(() => {
+    if (!sound) ensureAudio();
+    setSound((value) => !value);
+  }, [ensureAudio, sound]);
 
   useEffect(() => { const timer = setTimeout(() => setBooted(true), reducedMotion ? 100 : 1800); return () => clearTimeout(timer); }, [reducedMotion]);
   useEffect(() => localStorage.setItem('promptverse-quality', quality), [quality]);
   useEffect(() => localStorage.setItem('promptverse-sound', sound ? 'on' : 'off'), [sound]);
+  useEffect(() => {
+    if (!sound || audioContextRef.current) return undefined;
+    const unlock = () => ensureAudio();
+    window.addEventListener('pointerdown', unlock, { once: true }); window.addEventListener('keydown', unlock, { once: true });
+    return () => { window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock); };
+  }, [ensureAudio, sound]);
+  useEffect(() => () => { audioContextRef.current?.close?.().catch?.(() => {}); }, []);
   useEffect(() => {
     const id = location.pathname.split('/').filter(Boolean)[0];
     if (destinationById[id]) { setBooted(true); setStarted(true); setSelected(id); setLanded(true); setProgress(destinations.findIndex((item) => item.id === id) / (destinations.length - 1)); }
@@ -58,6 +80,7 @@ function App() {
   const nearest = nearestMatch.item;
   const nearbyPlanet = nearestMatch.distance <= .065 ? nearestMatch.item : null;
   const indicatedPlanet = hovered || nearbyPlanet;
+  const soundMode = journey ? 'landing' : landed ? 'planet' : 'space';
 
   const submitContact = (event) => {
     event.preventDefault(); setFormState('loading');
@@ -68,7 +91,7 @@ function App() {
 
   return (
     <main className={`promptverse ${started ? 'is-started' : ''} ${landed ? 'is-landed' : ''}`} onTouchStart={(e) => { touchStart.current = e.touches[0].clientY; }} onTouchEnd={(e) => { if (!started || landed || journey || mapOpen || menuOpen || fallback) return; const delta = (touchStart.current || 0) - e.changedTouches[0].clientY; setProgress((value) => clamp(value + delta * .0018, 0, 1)); }}>
-      <AmbientSound enabled={sound} />
+      <AmbientSound enabled={sound} mode={soundMode} contextRef={audioContextRef} ready={audioReady} />
       {!fallback && <SpaceScene progress={progress} selected={selected} journey={journey} quality={quality} reducedMotion={reducedMotion} focusedPlanetId={indicatedPlanet?.id} onPlanetClick={beginJourney} onPlanetHover={setHovered} onJourneyDone={finishJourney} />}
       <div className="space-noise" />
 
@@ -77,7 +100,7 @@ function App() {
         <div className="sector"><i /> CURRENT SECTOR <strong>{selected ? destinationById[selected].name : nearest.name}</strong></div>
         <nav aria-label="Portfolio controls">
           <button onClick={() => setMapOpen((v) => !v)}>Mission Map</button>
-          <button className="icon-button" onClick={() => setSound((v) => !v)} aria-label={`${sound ? 'Mute' : 'Enable'} sound`}>{sound ? '◉' : '○'}</button>
+          <button className="icon-button" onClick={toggleSound} aria-label={`${sound ? 'Mute' : 'Enable'} sound`}>{sound ? '◉' : '○'}</button>
           <button className="icon-button" onClick={() => setMenuOpen((v) => !v)} aria-label="Open settings">⚙</button>
         </nav>
       </header>
@@ -102,33 +125,40 @@ function App() {
 
 function LoadingScreen() { return <div className="loading-screen"><div className="loader-orbit"><i /><span>AI</span></div><p>INITIALIZING AI NAVIGATION SYSTEM</p><h1>MISSION: EXPLORE THE PROMPTVERSE</h1><div className="loading-bar"><i /></div></div>; }
 
-function AmbientSound({ enabled }) {
+function AmbientSound({ enabled, mode, contextRef, ready }) {
   useEffect(() => {
-    if (!enabled) return undefined;
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return undefined;
-    const context = new AudioContext();
-    const master = context.createGain(); master.gain.setValueAtTime(.0001, context.currentTime); master.gain.exponentialRampToValueAtTime(.032, context.currentTime + 2.4); master.connect(context.destination);
-    const filter = context.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 620; filter.Q.value = .7; filter.connect(master);
-    const frequencies = [55, 82.41, 110, 164.81];
-    const oscillators = frequencies.map((frequency, index) => {
+    const context = contextRef.current;
+    if (!enabled || !context) return undefined;
+    context.resume?.();
+    const soundscapes = {
+      space: { volume: .095, filter: 720, lfo: .075, depth: 135, frequencies: [46.25, 69.3, 92.5, 138.6], noise: 0 },
+      landing: { volume: .145, filter: 430, lfo: .32, depth: 180, frequencies: [34, 51, 68, 102], noise: .075 },
+      planet: { volume: .085, filter: 980, lfo: .045, depth: 210, frequencies: [65.41, 98, 130.81, 196], noise: .028 },
+    };
+    const config = soundscapes[mode] || soundscapes.space;
+    const master = context.createGain(); master.gain.setValueAtTime(.0001, context.currentTime); master.gain.exponentialRampToValueAtTime(config.volume, context.currentTime + .8); master.connect(context.destination);
+    const filter = context.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = config.filter; filter.Q.value = mode === 'landing' ? 1.4 : .75; filter.connect(master);
+    const oscillators = config.frequencies.map((frequency, index) => {
       const oscillator = context.createOscillator(); const gain = context.createGain();
-      oscillator.type = index % 2 ? 'sine' : 'triangle'; oscillator.frequency.value = frequency; oscillator.detune.value = index * 3 - 4;
-      gain.gain.value = index === 0 ? .24 : .1; oscillator.connect(gain); gain.connect(filter); oscillator.start();
+      oscillator.type = mode === 'landing' && index === 0 ? 'sawtooth' : index % 2 ? 'sine' : 'triangle'; oscillator.frequency.value = frequency; oscillator.detune.value = index * 3 - 4;
+      gain.gain.value = index === 0 ? .3 : .13; oscillator.connect(gain); gain.connect(filter); oscillator.start();
       return oscillator;
     });
-    const lfo = context.createOscillator(); const lfoGain = context.createGain(); lfo.frequency.value = .07; lfoGain.gain.value = 105; lfo.connect(lfoGain); lfoGain.connect(filter.frequency); lfo.start();
-    const resume = () => context.state === 'suspended' && context.resume();
-    window.addEventListener('pointerdown', resume, { passive: true }); window.addEventListener('keydown', resume);
-    resume();
+    const activeSources = [...oscillators];
+    if (config.noise) {
+      const duration = 2; const buffer = context.createBuffer(1, context.sampleRate * duration, context.sampleRate); const channel = buffer.getChannelData(0);
+      for (let index = 0; index < channel.length; index += 1) channel[index] = Math.random() * 2 - 1;
+      const noise = context.createBufferSource(); const noiseFilter = context.createBiquadFilter(); const noiseGain = context.createGain();
+      noise.buffer = buffer; noise.loop = true; noiseFilter.type = mode === 'landing' ? 'lowpass' : 'bandpass'; noiseFilter.frequency.value = mode === 'landing' ? 310 : 460; noiseFilter.Q.value = mode === 'landing' ? .55 : .9; noiseGain.gain.value = config.noise;
+      noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(master); noise.start(); activeSources.push(noise);
+    }
+    const lfo = context.createOscillator(); const lfoGain = context.createGain(); lfo.frequency.value = config.lfo; lfoGain.gain.value = config.depth; lfo.connect(lfoGain); lfoGain.connect(filter.frequency); lfo.start(); activeSources.push(lfo);
     return () => {
-      window.removeEventListener('pointerdown', resume); window.removeEventListener('keydown', resume);
-      master.gain.cancelScheduledValues(context.currentTime); master.gain.setTargetAtTime(.0001, context.currentTime, .08);
-      oscillators.forEach((oscillator) => { try { oscillator.stop(context.currentTime + .35); } catch {} });
-      try { lfo.stop(context.currentTime + .35); } catch {}
-      window.setTimeout(() => context.close().catch(() => {}), 450);
+      master.gain.cancelScheduledValues(context.currentTime); master.gain.setTargetAtTime(.0001, context.currentTime, .06);
+      activeSources.forEach((source) => { try { source.stop(context.currentTime + .3); } catch {} });
+      window.setTimeout(() => { try { master.disconnect(); filter.disconnect(); } catch {} }, 360);
     };
-  }, [enabled]);
+  }, [contextRef, enabled, mode, ready]);
   return null;
 }
 
