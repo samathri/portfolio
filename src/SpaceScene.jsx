@@ -13,8 +13,6 @@ function makePlanetFocusTexture(accent) {
   const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, 256, 256);
   ctx.strokeStyle = accent; ctx.lineWidth = 5; ctx.shadowColor = accent; ctx.shadowBlur = 22;
   ctx.beginPath(); ctx.arc(128, 128, 105, 0, Math.PI * 2); ctx.stroke();
-  ctx.lineWidth = 2; ctx.globalAlpha = .65; ctx.setLineDash([10, 12]);
-  ctx.beginPath(); ctx.arc(128, 128, 116, 0, Math.PI * 2); ctx.stroke();
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }

@@ -68,6 +68,7 @@ function App() {
 
   return (
     <main className={`promptverse ${started ? 'is-started' : ''} ${landed ? 'is-landed' : ''}`} onTouchStart={(e) => { touchStart.current = e.touches[0].clientY; }} onTouchEnd={(e) => { if (!started || landed || journey || mapOpen || menuOpen || fallback) return; const delta = (touchStart.current || 0) - e.changedTouches[0].clientY; setProgress((value) => clamp(value + delta * .0018, 0, 1)); }}>
+      <AmbientSound enabled={sound} />
       {!fallback && <SpaceScene progress={progress} selected={selected} journey={journey} quality={quality} reducedMotion={reducedMotion} focusedPlanetId={indicatedPlanet?.id} onPlanetClick={beginJourney} onPlanetHover={setHovered} onJourneyDone={finishJourney} />}
       <div className="space-noise" />
 
@@ -100,6 +101,36 @@ function App() {
 }
 
 function LoadingScreen() { return <div className="loading-screen"><div className="loader-orbit"><i /><span>AI</span></div><p>INITIALIZING AI NAVIGATION SYSTEM</p><h1>MISSION: EXPLORE THE PROMPTVERSE</h1><div className="loading-bar"><i /></div></div>; }
+
+function AmbientSound({ enabled }) {
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return undefined;
+    const context = new AudioContext();
+    const master = context.createGain(); master.gain.setValueAtTime(.0001, context.currentTime); master.gain.exponentialRampToValueAtTime(.032, context.currentTime + 2.4); master.connect(context.destination);
+    const filter = context.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 620; filter.Q.value = .7; filter.connect(master);
+    const frequencies = [55, 82.41, 110, 164.81];
+    const oscillators = frequencies.map((frequency, index) => {
+      const oscillator = context.createOscillator(); const gain = context.createGain();
+      oscillator.type = index % 2 ? 'sine' : 'triangle'; oscillator.frequency.value = frequency; oscillator.detune.value = index * 3 - 4;
+      gain.gain.value = index === 0 ? .24 : .1; oscillator.connect(gain); gain.connect(filter); oscillator.start();
+      return oscillator;
+    });
+    const lfo = context.createOscillator(); const lfoGain = context.createGain(); lfo.frequency.value = .07; lfoGain.gain.value = 105; lfo.connect(lfoGain); lfoGain.connect(filter.frequency); lfo.start();
+    const resume = () => context.state === 'suspended' && context.resume();
+    window.addEventListener('pointerdown', resume, { passive: true }); window.addEventListener('keydown', resume);
+    resume();
+    return () => {
+      window.removeEventListener('pointerdown', resume); window.removeEventListener('keydown', resume);
+      master.gain.cancelScheduledValues(context.currentTime); master.gain.setTargetAtTime(.0001, context.currentTime, .08);
+      oscillators.forEach((oscillator) => { try { oscillator.stop(context.currentTime + .35); } catch {} });
+      try { lfo.stop(context.currentTime + .35); } catch {}
+      window.setTimeout(() => context.close().catch(() => {}), 450);
+    };
+  }, [enabled]);
+  return null;
+}
 
 function Intro({ onStart, onQuickView }) { return <section className="intro-panel"><div className="eyebrow"><i /> TRANSMISSION RECEIVED // 001</div><p className="hello">Hi, I’m</p><h1>{profile.name}</h1><h2>{profile.role}</h2><p className="intro-text">{profile.intro}</p><div className="intro-actions"><button className="primary" onClick={onStart}>Begin exploration <span>→</span></button><button onClick={onQuickView}>Quick 2D view</button></div><small className="instruction">Scroll to navigate <b>•</b> Click a planet to explore</small></section>; }
 
