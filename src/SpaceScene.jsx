@@ -95,10 +95,15 @@ export default function SpaceScene({ progress, selected, journey, quality, reduc
     const ship = makeShip(); ship.position.set(0, 0, 3.2); scene.add(ship);
     const astronaut = makeAstronaut(); scene.add(astronaut);
     const raycaster = new THREE.Raycaster(); const pointer = new THREE.Vector2();
-    let hovered = null; let frame; let last = performance.now(); let journeyStart = 0; let journeyId = null; let doneSent = false;
+    let hovered = null; let frame; let last = performance.now(); let journeyStart = 0; let journeyId = null; let doneSent = false; let compactView = false;
 
+    let normalFov = 55;
     function resize() {
-      const { clientWidth, clientHeight } = mount; camera.aspect = clientWidth / clientHeight; camera.updateProjectionMatrix(); renderer.setSize(clientWidth, clientHeight, false);
+      const { clientWidth, clientHeight } = mount;
+      compactView = clientWidth <= 768;
+      camera.aspect = clientWidth / clientHeight;
+      normalFov = camera.aspect < .62 ? 70 : camera.aspect < .9 ? 63 : 55;
+      camera.updateProjectionMatrix(); renderer.setSize(clientWidth, clientHeight, false);
     }
     const resizeObserver = new ResizeObserver(resize); resizeObserver.observe(mount); resize();
 
@@ -136,8 +141,8 @@ export default function SpaceScene({ progress, selected, journey, quality, reduc
         }
         const closeCamera = t > .56 ? 4.4 : 6.2;
         camera.position.lerp(new THREE.Vector3(ship.position.x + (t > .56 ? 3 : 0), ship.position.y + 1.55, ship.position.z + closeCamera), 0.065);
-        camera.lookAt(ship.position.x, ship.position.y, ship.position.z - (t > .56 ? 0 : 1));
-        camera.fov += ((t > .72 ? 46 : 55) - camera.fov) * .06; camera.updateProjectionMatrix();
+        camera.lookAt(ship.position.x, ship.position.y - (compactView ? .55 : 0), ship.position.z - (t > .56 ? 0 : 1));
+        camera.fov += ((t > .72 ? Math.max(46, normalFov - 9) : normalFov) - camera.fov) * .06; camera.updateProjectionMatrix();
         // The astronaut remains inside the rocket for the entire landing shot.
         // It is introduced only after touchdown in the planetary explorer.
         astronaut.visible = false;
@@ -173,21 +178,21 @@ export default function SpaceScene({ progress, selected, journey, quality, reduc
         ship.rotation.z += (progressDelta * -2.2 - ship.rotation.z) * .08;
         // Always restore the normal horizontal flight pose after leaving a planet.
         ship.rotation.x += (0 - ship.rotation.x) * 0.09;
-        camera.fov += (55 - camera.fov) * .08; camera.updateProjectionMatrix();
+        camera.fov += (normalFov - camera.fov) * .08; camera.updateProjectionMatrix();
         ship.userData.lastProgress = state.progress;
 
         // Keep the camera behind the rocket for both directions. During the
         // U-turn it travels around the rocket horizontally instead of rising
         // into the empty top-down view seen in the recording.
-        const cameraDistance = 7.6;
+        const cameraDistance = camera.aspect < .7 ? 9.2 : 7.6;
         const cameraTargetX = ship.position.x + Math.sin(ship.rotation.y) * cameraDistance;
         const cameraTargetZ = ship.position.z + Math.cos(ship.rotation.y) * cameraDistance;
         const lookAheadX = ship.position.x - Math.sin(ship.rotation.y) * 3;
         const lookAheadZ = ship.position.z - Math.cos(ship.rotation.y) * 3;
         camera.position.x += (cameraTargetX - camera.position.x) * .045;
-        camera.position.y += (2.2 - camera.position.y) * .04;
+        camera.position.y += ((compactView ? 2.05 : 2.2) - camera.position.y) * .04;
         camera.position.z += (cameraTargetZ - camera.position.z) * .045;
-        camera.lookAt(lookAheadX, 0, lookAheadZ);
+        camera.lookAt(lookAheadX, compactView ? -1.15 : 0, lookAheadZ);
       }
       const moving = Math.abs(targetZ - ship.position.z) > .08 || state.journey;
       ship.children.filter((item) => item.name === 'engineGlow').forEach((glow) => { glow.scale.y = 0.75 + (moving ? Math.sin(now * .02) * .18 + .65 : .05); glow.material.opacity = moving ? .9 : .35; });

@@ -64,7 +64,7 @@ function App() {
   if (!booted) return <LoadingScreen />;
 
   return (
-    <main className={`promptverse ${started ? 'is-started' : ''} ${landed ? 'is-landed' : ''}`} onTouchStart={(e) => { touchStart.current = e.touches[0].clientY; }} onTouchEnd={(e) => { if (!started || landed || journey) return; const delta = (touchStart.current || 0) - e.changedTouches[0].clientY; setProgress((value) => clamp(value + delta * .0018, 0, 1)); }}>
+    <main className={`promptverse ${started ? 'is-started' : ''} ${landed ? 'is-landed' : ''}`} onTouchStart={(e) => { touchStart.current = e.touches[0].clientY; }} onTouchEnd={(e) => { if (!started || landed || journey || mapOpen || menuOpen || fallback) return; const delta = (touchStart.current || 0) - e.changedTouches[0].clientY; setProgress((value) => clamp(value + delta * .0018, 0, 1)); }}>
       {!fallback && <SpaceScene progress={progress} selected={selected} journey={journey} quality={quality} reducedMotion={reducedMotion} onPlanetClick={beginJourney} onPlanetHover={setHovered} onJourneyDone={finishJourney} />}
       <div className="space-noise" />
 
@@ -84,8 +84,8 @@ function App() {
       {hovered && !journey && !landed && <div className="planet-tooltip"><small>{hovered.name}</small><strong>{hovered.section}</strong><p>{hovered.tagline}</p><span>Click to initiate landing</span></div>}
 
       {(mapOpen || menuOpen) && <button className="scrim" onClick={() => { setMapOpen(false); setMenuOpen(false); }} aria-label="Close panel" />}
-      <MissionMap open={mapOpen} selected={selected} onSelect={beginJourney} />
-      <Settings open={menuOpen} quality={quality} setQuality={setQuality} fallback={fallback} setFallback={setFallback} />
+      <MissionMap open={mapOpen} selected={selected} onSelect={beginJourney} onClose={() => setMapOpen(false)} />
+      <Settings open={menuOpen} quality={quality} setQuality={setQuality} fallback={fallback} setFallback={setFallback} onClose={() => setMenuOpen(false)} />
 
       {journey && <div className="journey-status"><small>AUTOPILOT ENGAGED</small><strong>Approaching {destinationById[selected].name}</strong><div className="journey-line"><i /></div><button onClick={finishJourney}>Skip journey</button></div>}
       {landed && <SectionOverlay section={destinationById[selected]} onBack={returnToSpace} formState={formState} onSubmit={submitContact} />}
@@ -100,15 +100,16 @@ function LoadingScreen() { return <div className="loading-screen"><div className
 
 function Intro({ onStart, onQuickView }) { return <section className="intro-panel"><div className="eyebrow"><i /> TRANSMISSION RECEIVED // 001</div><p className="hello">Hi, I’m</p><h1>{profile.name}</h1><h2>{profile.role}</h2><p className="intro-text">{profile.intro}</p><div className="intro-actions"><button className="primary" onClick={onStart}>Begin exploration <span>→</span></button><button onClick={onQuickView}>Quick 2D view</button></div><small className="instruction">Scroll to navigate <b>•</b> Click a planet to explore</small></section>; }
 
-function MissionMap({ open, selected, onSelect }) { return <aside className={`mission-map ${open ? 'open' : ''}`} aria-hidden={!open}><header><small>DIRECT NAVIGATION</small><h2>Mission Map</h2><p>Choose a destination. All journeys are skippable.</p></header><div className="map-orbit">{destinations.map((item, index) => <button key={item.id} className={selected === item.id ? 'active' : ''} onClick={() => onSelect(item.id)}><span style={{ '--planet': item.color }}>{String(index + 1).padStart(2, '0')}</span><div><strong>{item.name}</strong><small>{item.section}</small></div><b>↗</b></button>)}</div></aside>; }
+function MissionMap({ open, selected, onSelect, onClose }) { return <aside className={`mission-map ${open ? 'open' : ''}`} aria-hidden={!open}><button className="panel-close" onClick={onClose} aria-label="Close mission map">×</button><header><small>DIRECT NAVIGATION</small><h2>Mission Map</h2><p>Choose a destination. All journeys are skippable.</p></header><div className="map-orbit">{destinations.map((item, index) => <button key={item.id} className={selected === item.id ? 'active' : ''} onClick={() => onSelect(item.id)}><span style={{ '--planet': item.color }}>{String(index + 1).padStart(2, '0')}</span><div><strong>{item.name}</strong><small>{item.section}</small></div><b>↗</b></button>)}</div></aside>; }
 
-function Settings({ open, quality, setQuality, fallback, setFallback }) { return <aside className={`settings-panel ${open ? 'open' : ''}`} aria-hidden={!open}><small>SYSTEM SETTINGS</small><h2>Experience</h2><label>Graphics quality<select value={quality} onChange={(e) => setQuality(e.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label className="switch-row">Use accessible 2D mode<input type="checkbox" checked={fallback} onChange={(e) => setFallback(e.target.checked)} /></label><p>Motion preferences from your device are respected automatically.</p></aside>; }
+function Settings({ open, quality, setQuality, fallback, setFallback, onClose }) { return <aside className={`settings-panel ${open ? 'open' : ''}`} aria-hidden={!open}><button className="panel-close" onClick={onClose} aria-label="Close settings">×</button><small>SYSTEM SETTINGS</small><h2>Experience</h2><label>Graphics quality<select value={quality} onChange={(e) => setQuality(e.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label className="switch-row">Use accessible 2D mode<input type="checkbox" checked={fallback} onChange={(e) => setFallback(e.target.checked)} /></label><p>Motion preferences from your device are respected automatically.</p></aside>; }
 
 function SectionOverlay({ section, onBack, formState, onSubmit }) {
   const [walk, setWalk] = useState(0);
   const [moving, setMoving] = useState(false);
   const [active, setActive] = useState(null);
   const stopTimer = useRef(null);
+  const surfaceTouchStart = useRef(null);
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
   const discoveries = useMemo(() => {
     if (section.cards) return section.cards.map((item) => ({ title: item.title, label: item.meta, text: item.text, tags: item.tags }));
@@ -118,20 +119,21 @@ function SectionOverlay({ section, onBack, formState, onSubmit }) {
     return [{ title: 'Communication Uplink', label: 'SIGNAL STATION', text: section.body, contact: true }];
   }, [section]);
 
+  const move = useCallback((delta) => {
+    // Keep the astronaut pace deliberate on an endless forward route.
+    setWalk((value) => Math.max(0, value + delta * .00022));
+    setMoving(true); clearTimeout(stopTimer.current); stopTimer.current = setTimeout(() => setMoving(false), 170);
+  }, []);
+
   useEffect(() => {
-    const move = (delta) => {
-      // Keep the astronaut pace deliberate on an endless forward route.
-      setWalk((value) => Math.max(0, value + delta * .00022));
-      setMoving(true); clearTimeout(stopTimer.current); stopTimer.current = setTimeout(() => setMoving(false), 170);
-    };
     const wheel = (event) => move(event.deltaY);
     const key = (event) => { if (event.key === 'ArrowDown') move(85); if (event.key === 'ArrowUp') move(-85); };
     window.addEventListener('wheel', wheel, { passive: true }); window.addEventListener('keydown', key);
     return () => { window.removeEventListener('wheel', wheel); window.removeEventListener('keydown', key); clearTimeout(stopTimer.current); };
-  }, []);
+  }, [move]);
 
   const reached = Math.floor(walk * discoveries.length + .05) % discoveries.length;
-  return <section className={`planet-surface section-${section.id}`} style={{ '--planet': section.color, '--accent': section.accent }}>
+  return <section className={`planet-surface section-${section.id}`} style={{ '--planet': section.color, '--accent': section.accent }} onTouchStart={(event) => { surfaceTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => { if (active !== null) return; const delta = (surfaceTouchStart.current || 0) - event.changedTouches[0].clientY; if (Math.abs(delta) > 12) move(delta * 3.2); }}>
     <PlanetExplorer color={section.color} accent={section.accent} progress={walk} moving={moving} reducedMotion={reducedMotion} />
     <header className="surface-hud"><button onClick={onBack}>← Launch to space</button><div><small>PLANETARY EXPEDITION // {section.name}</small><strong>{section.section}</strong></div><span>{Math.round(walk * 100)}M TRAVELED</span></header>
     <aside className="surface-brief"><small>MISSION OBJECTIVE</small><h2>{section.heading}</h2><p>{section.tagline}</p><div><i /> Scroll to run • Move pointer up for a higher view</div></aside>

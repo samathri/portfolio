@@ -16,3 +16,72 @@
 @media(max-width:900px){.surface-hud{top:72px}.surface-brief{top:170px;width:42vw}.discovery-stack{top:175px;width:38vw}.discovery-stack button{grid-template-columns:32px 1fr}.discovery-stack button>b{display:none}.walk-meter{width:80vw}.hologram-panel{padding:32px}}
 @media(max-width:600px){.surface-hud{height:62px;padding:0 16px;grid-template-columns:1fr auto}.surface-hud>div{display:none}.surface-brief{left:16px;top:150px;width:62vw;padding:15px}.surface-brief h2{font-size:23px}.surface-brief p{display:none}.discovery-stack{right:12px;top:auto;bottom:80px;width:56vw;gap:5px}.discovery-stack button{min-height:51px;padding:7px;grid-template-columns:27px 1fr;gap:8px}.discovery-stack button>span{width:24px;height:24px}.discovery-stack button strong{font-size:10px}.discovery-stack button small{font-size:6px}.walk-meter{bottom:47px;width:90vw}.hologram-panel{padding:27px 23px;max-height:72vh}.hologram-panel h2{font-size:34px}.hologram-panel>p{font-size:13px}}
 .story-carousel{height:104px;overflow:hidden;top:235px;display:block}.story-carousel button{position:absolute;inset:0;width:100%;opacity:0;transform:translateY(115%);transition:transform .62s cubic-bezier(.22,.8,.2,1),opacity .42s;pointer-events:none}.story-carousel button.story-current{opacity:1;transform:translateY(0);pointer-events:auto}.story-carousel button.story-previous{opacity:0;transform:translateY(-115%);pointer-events:none}.story-carousel button.story-next{opacity:0;transform:translateY(115%);pointer-events:none}@media(max-width:900px){.story-carousel{top:190px}}@media(max-width:600px){.story-carousel{top:auto;bottom:105px;height:70px}}
+
+/* Responsive interaction layer */
+.panel-close{position:absolute;top:24px;right:24px;width:42px;height:42px;border:1px solid var(--line);border-radius:50%;background:#071421;color:#dff8ff;font-size:23px;line-height:1;cursor:pointer;display:grid;place-items:center}
+
+@media(max-width:768px){
+  .promptverse{min-height:100svh;height:100dvh;touch-action:pan-y}
+  .hud-top{height:64px;padding:env(safe-area-inset-top) max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left));grid-template-columns:auto 1fr;background:#020713e8}
+  .brand>span{width:36px;height:36px}.brand div{display:none}.sector{display:none}
+  .hud-top nav{gap:6px;justify-self:end}.hud-top nav button{height:40px;min-width:40px;padding:0 11px}.hud-top nav .icon-button{display:grid!important;place-items:center;width:40px}
+  .intro-panel{left:max(20px,env(safe-area-inset-left));right:max(20px,env(safe-area-inset-right));top:78px;bottom:58px;width:auto;max-height:none;transform:none;overflow:auto;padding:4vh 0 18px;display:flex;flex-direction:column;justify-content:flex-end}
+  .is-started .intro-panel{transform:translateY(24px)}
+  .eyebrow{margin-bottom:18px;font-size:9px}.hello{font-size:14px}.intro-panel h1{font-size:clamp(45px,15vw,72px);line-height:.93;letter-spacing:-.065em}.intro-panel h2{font-size:12px;line-height:1.45;margin:14px 0}.intro-text{font-size:13px;line-height:1.55;max-width:520px;margin:0}.intro-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px}.intro-actions button{height:50px;padding:0 12px;font-size:12px}.intro-actions button span{margin-left:8px}.instruction{margin-top:16px;font-size:8px}
+  .flight-guide{bottom:58px}.planet-tooltip{display:none}
+  .hud-bottom{height:38px;padding:0 max(14px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(14px,env(safe-area-inset-left));grid-template-columns:1fr 78px;gap:10px}.hud-bottom>span:first-child{display:none}.hud-bottom>span:last-child{font-size:8px}
+  .mission-map,.settings-panel{width:100vw;padding:88px max(20px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));border-left:0}.panel-close{top:calc(18px + env(safe-area-inset-top));right:max(18px,env(safe-area-inset-right))}.mission-map header{margin-bottom:18px}.mission-map h2,.settings-panel h2{font-size:32px}.map-orbit button{min-height:67px;padding:11px 2px}.map-orbit button>span{width:42px;height:42px}
+  .journey-status{bottom:56px;width:calc(100vw - 36px);padding:14px;background:#020713b8;backdrop-filter:blur(8px)}
+  .fallback-view{padding:calc(72px + env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) calc(30px + env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}.fallback-view header{display:block}.fallback-view header button{margin-top:14px}.fallback-grid{grid-template-columns:1fr}.fallback-grid article{min-height:200px}
+
+  .surface-hud{top:64px;height:58px;padding:0 max(14px,env(safe-area-inset-right)) 0 max(14px,env(safe-area-inset-left));grid-template-columns:1fr auto}.surface-hud>div{display:none}.surface-hud>button{min-height:42px}.surface-hud>span{font-size:8px}
+  .surface-brief{left:max(14px,env(safe-area-inset-left));top:132px;width:min(72vw,330px);padding:14px 16px}.surface-brief h2{font-size:clamp(20px,6.4vw,29px);margin:8px 0}.surface-brief p{display:none}.surface-brief>div{margin-top:10px;font-size:7px;line-height:1.5}
+  .discovery-stack{left:12px;right:12px;top:auto;bottom:82px;width:auto;max-height:36vh;overflow:auto;gap:5px;padding-top:5px}.discovery-stack button{min-height:54px;grid-template-columns:29px 1fr auto;padding:8px 10px;transform:translateY(12px)}.discovery-stack button>span{width:25px;height:25px}.discovery-stack button strong{font-size:11px}.discovery-stack button b{display:block;font-size:6px}
+  .story-carousel{left:auto;right:12px;bottom:88px;width:min(72vw,330px);height:72px;overflow:hidden;padding:0}
+  .walk-meter{bottom:47px;width:calc(100vw - 28px);gap:8px}.walk-meter span{font-size:6px}
+  .hologram-panel{top:64px;bottom:38px;left:10px;right:10px;transform:none;width:auto;max-height:none;padding:48px 20px 24px;border-radius:4px}.hologram-panel h2{font-size:clamp(29px,9vw,42px)}.hologram-panel>p{font-size:14px;line-height:1.6}.hologram-close{width:42px;height:42px}.contact-form{grid-template-columns:1fr;gap:14px}.contact-form label:last-of-type,.contact-form>button{grid-column:auto}
+}
+
+@media(max-width:390px){
+  .hud-top nav button:first-child{font-size:0;width:42px;padding:0}.hud-top nav button:first-child:after{content:'MAP';font:500 8px DM Mono;letter-spacing:.08em}
+  .intro-panel{top:68px}.eyebrow{margin-bottom:12px}.intro-panel h1{font-size:44px}.intro-text{font-size:12px}.intro-actions{grid-template-columns:1fr}.intro-actions button{height:44px}.instruction{display:none}
+  .surface-brief{width:calc(100vw - 28px)}.discovery-stack{max-height:31vh}.story-carousel{width:calc(100vw - 24px)}
+}
+
+@media(max-height:500px) and (orientation:landscape){
+  .hud-top{height:56px}.intro-panel{top:58px;bottom:40px;padding:12px 0;justify-content:center;width:min(58vw,560px)}.eyebrow,.hello,.intro-text,.instruction{display:none}.intro-panel h1{font-size:44px}.intro-panel h2{margin:10px 0}.intro-actions{margin-top:8px}.intro-actions button{height:42px}.hud-bottom{height:32px}
+  .surface-hud{top:56px}.surface-brief{top:120px;width:36vw}.surface-brief>div{display:none}.discovery-stack{left:auto;right:12px;top:122px;bottom:45px;width:40vw;max-height:none}.story-carousel{top:142px;bottom:auto;width:38vw}.walk-meter{bottom:36px;width:55vw}.hologram-panel{top:58px;bottom:34px;left:8vw;right:8vw}
+}
+
+/* Final phone/tablet polish: safe areas, touch targets and 3D readability. */
+@media(max-width:768px){
+  html,body{height:100%;overscroll-behavior:none}
+  button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .space-canvas canvas,.planet-explorer-canvas canvas{touch-action:none}
+  .intro-panel{padding-left:2px;padding-right:2px;text-shadow:0 2px 18px #01030a}
+  .intro-panel h1{max-width:100%;overflow-wrap:anywhere}
+  .intro-actions button,.hud-top nav button,.surface-hud>button,.map-orbit button{min-height:44px}
+  .loading-screen{padding:24px}.loading-screen p,.loading-screen h1{max-width:310px;line-height:1.7}
+  .surface-brief{max-height:190px;overflow:hidden;background:linear-gradient(90deg,#030914f2 68%,transparent)}
+  .hologram-panel{padding-bottom:calc(24px + env(safe-area-inset-bottom));overscroll-behavior:contain}
+  .contact-form input,.contact-form select,.contact-form textarea{font-size:16px}
+}
+
+@media(max-width:430px){
+  .hud-top nav{max-width:calc(100vw - 66px)}
+  .hud-top nav button:first-child{padding:0 12px;font-size:9px;white-space:nowrap}
+  .intro-panel{bottom:48px;padding-bottom:12px}
+  .intro-panel h2{max-width:330px}
+  .intro-actions{gap:7px}
+  .surface-hud>button{font-size:11px;white-space:nowrap}
+  .surface-hud>span{max-width:86px;text-align:right;line-height:1.5}
+  .discovery-stack button{border-color:#83a5b63d;background:#030914e8}
+}
+
+@media(max-width:350px){
+  .hud-top nav .icon-button{display:none!important}
+  .intro-panel h1{font-size:39px}
+  .intro-actions{grid-template-columns:1fr}
+  .surface-hud>span{display:none}
+  .surface-hud{grid-template-columns:1fr}
+}
