@@ -1,347 +1,153 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import ThreeAvatar from './ThreeAvatar.jsx';
+import SpaceScene from './SpaceScene.jsx';
+import PlanetExplorer from './PlanetExplorer.jsx';
+import { destinationById, destinations, profile } from './content.js';
 import './styles.css';
 
-const profile = {
-  name: 'Your Name',
-  designation: 'AI Prompt Engineer',
-  email: 'hello@example.com',
-  phone: '+94 77 000 0000',
-  location: 'Colombo, Sri Lanka',
-  intro:
-    'I build prompt systems, chatbot flows, and AI workflows that turn unclear user intent into useful AI output.',
-  about:
-    'I specialize in designing AI conversations, prompt libraries, automation flows, and evaluation methods for teams that want reliable AI outputs instead of random experiments.',
-  skills: [
-    'Prompt Architecture',
-    'Chatbot Flow Design',
-    'AI Automation',
-    'RAG Prompt Planning',
-    'LLM Evaluation',
-    'System Prompt Design',
-    'Content Workflows',
-    'AI Tool Testing',
-  ],
-  works: [
-    'Designed a chatbot prompt flow for customer support routing.',
-    'Created reusable prompt templates for marketing and brand content.',
-    'Built AI research workflows with summary checks and source awareness.',
-  ],
-  projects: [
-    {
-      title: 'Support Bot Brain',
-      category: 'Chatbot AI',
-      result: 'Designed intent routes, fallback replies, and tone rules for support conversations.',
-      stack: ['Prompt map', 'Conversation UX', 'Testing'],
-    },
-    {
-      title: 'Prompt Library OS',
-      category: 'Prompt Ops',
-      result: 'Created a reusable prompt library for content generation, editing, and quality control.',
-      stack: ['Templates', 'Guidelines', 'Output checks'],
-    },
-    {
-      title: 'Research Co-Pilot',
-      category: 'AI Workflow',
-      result: 'Built prompts for research summaries, source comparison, and final insight extraction.',
-      stack: ['Research', 'Summaries', 'Review loop'],
-    },
-  ],
-};
-
-const directions = {
-  top: {
-    label: 'Skills',
-    action: '↑',
-    title: 'Skill Control Room',
-    subtitle: 'A compact map of the AI prompt engineering capabilities I use.',
-  },
-  right: {
-    label: 'Projects',
-    action: '→',
-    title: 'Project Gallery',
-    subtitle: 'The avatar reached the project side. Here are selected builds and case-study ideas.',
-  },
-  bottom: {
-    label: 'Contact',
-    action: '↓',
-    title: 'Contact Terminal',
-    subtitle: 'The direct path for project inquiries, collaborations, and AI workflow work.',
-  },
-  left: {
-    label: 'About',
-    action: '←',
-    title: 'About Signal',
-    subtitle: 'A short profile of what I do and how I think about AI systems.',
-  },
-  center: {
-    label: 'Works',
-    action: 'Open Core',
-    title: 'Work Log',
-    subtitle: 'Recent practical work areas for AI product, content, and operations teams.',
-  },
-};
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 function App() {
-  const [introDone, setIntroDone] = useState(false);
-  const [view, setView] = useState('home');
-  const [motion, setMotion] = useState(null);
-  const [incomingDirection, setIncomingDirection] = useState('right');
-  const [hideUi, setHideUi] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('portfolio-theme') || 'dark');
+  const [booted, setBooted] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [journey, setJourney] = useState(null);
+  const [landed, setLanded] = useState(false);
+  const [hovered, setHovered] = useState(null);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [quality, setQuality] = useState(() => localStorage.getItem('promptverse-quality') || 'medium');
+  const [sound, setSound] = useState(() => localStorage.getItem('promptverse-sound') === 'on');
+  const [fallback, setFallback] = useState(false);
+  const [formState, setFormState] = useState('idle');
+  const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
+  const touchStart = useRef(null);
 
+  useEffect(() => { const timer = setTimeout(() => setBooted(true), reducedMotion ? 100 : 1800); return () => clearTimeout(timer); }, [reducedMotion]);
+  useEffect(() => localStorage.setItem('promptverse-quality', quality), [quality]);
+  useEffect(() => localStorage.setItem('promptverse-sound', sound ? 'on' : 'off'), [sound]);
   useEffect(() => {
-    const timer = setTimeout(() => setIntroDone(true), 900);
-    return () => clearTimeout(timer);
+    const id = location.pathname.split('/').filter(Boolean)[0];
+    if (destinationById[id]) { setBooted(true); setStarted(true); setSelected(id); setLanded(true); setProgress(destinations.findIndex((item) => item.id === id) / (destinations.length - 1)); }
   }, []);
 
+  const beginJourney = useCallback((id) => {
+    if (!destinationById[id]) return;
+    setStarted(true); setMapOpen(false); setMenuOpen(false); setLanded(false); setSelected(id); setJourney({ id, key: Date.now() });
+    history.pushState({}, '', `/${id}`);
+  }, []);
+
+  const finishJourney = useCallback(() => { setLanded(true); setJourney(null); }, []);
+  const returnToSpace = useCallback(() => { setJourney(null); setLanded(false); setSelected(null); history.pushState({}, '', '/'); }, []);
+
   useEffect(() => {
-    localStorage.setItem('portfolio-theme', theme);
-  }, [theme]);
+    const onWheel = (event) => {
+      if (!started || journey || landed || fallback) return;
+      setProgress((value) => clamp(value + event.deltaY * 0.00055, 0, 1));
+    };
+    const onKey = (event) => {
+      if (event.key === 'Escape') { if (landed) returnToSpace(); else { setMapOpen(false); setMenuOpen(false); } }
+      if (!journey && !landed && ['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); setStarted(true); setProgress((value) => clamp(value + (event.key === 'ArrowDown' ? .055 : -.055), 0, 1)); }
+    };
+    window.addEventListener('wheel', onWheel, { passive: true }); window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('wheel', onWheel); window.removeEventListener('keydown', onKey); };
+  }, [started, journey, landed, fallback, returnToSpace]);
 
-  const goTo = (direction) => {
-    if (motion) return;
+  const nearest = destinations.reduce((best, item, index) => Math.abs(progress - index / (destinations.length - 1)) < best.distance ? { item, distance: Math.abs(progress - index / (destinations.length - 1)) } : best, { item: destinations[0], distance: Infinity }).item;
 
-    setHideUi(true);
-
-    if (direction === 'center') {
-      setMotion({ direction, phase: 'opening' });
-
-      setTimeout(() => {
-        setIncomingDirection(direction);
-        setView(direction);
-      }, 700);
-
-      setTimeout(() => {
-        setHideUi(false);
-        setMotion(null);
-      }, 1150);
-
-      return;
-    }
-
-    setMotion({ direction, phase: 'turning' });
-
-    setTimeout(() => {
-      setMotion({ direction, phase: 'running' });
-    }, 900);
-
-    // Start revealing the destination while the avatar is still running.
-    // Keeping the runner in its running phase makes both movements overlap
-    // instead of swapping screens after the animation has already finished.
-    setTimeout(() => {
-      setIncomingDirection(direction);
-      setView(direction);
-    }, 1900);
-
-    setTimeout(() => {
-      setHideUi(false);
-    }, 1960);
-
-    setTimeout(() => {
-      setMotion(null);
-    }, 3150);
+  const submitContact = (event) => {
+    event.preventDefault(); setFormState('loading');
+    setTimeout(() => setFormState('success'), 1200);
   };
 
-  const goHome = () => {
-    if (motion) return;
-
-    setHideUi(true);
-    setMotion({ direction: 'back', phase: 'entering' });
-
-    setTimeout(() => {
-      setView('home');
-    }, 350);
-
-    setTimeout(() => {
-      setHideUi(false);
-      setMotion(null);
-    }, 850);
-  };
-
-  const motionClass = motion ? `${motion.phase} ${motion.phase}-${motion.direction}` : '';
-  const showRunner = motion && ['turning', 'running', 'opening'].includes(motion.phase);
+  if (!booted) return <LoadingScreen />;
 
   return (
-    <main className={`app theme-${theme} ${introDone ? 'ready' : 'intro'} ${motionClass} ${hideUi ? 'hide-ui' : ''} from-${incomingDirection}`}>
-      <div className="grid-floor" />
-      <div className="ambient ambient-a" />
-      <div className="ambient ambient-b" />
+    <main className={`promptverse ${started ? 'is-started' : ''} ${landed ? 'is-landed' : ''}`} onTouchStart={(e) => { touchStart.current = e.touches[0].clientY; }} onTouchEnd={(e) => { if (!started || landed || journey) return; const delta = (touchStart.current || 0) - e.changedTouches[0].clientY; setProgress((value) => clamp(value + delta * .0018, 0, 1)); }}>
+      {!fallback && <SpaceScene progress={progress} selected={selected} journey={journey} quality={quality} reducedMotion={reducedMotion} onPlanetClick={beginJourney} onPlanetHover={setHovered} onJourneyDone={finishJourney} />}
+      <div className="space-noise" />
 
-      <div className="viewport">
-        {view === 'home' ? <HomeScreen goTo={goTo} /> : <DetailScreen view={view} goHome={goHome} />}
-      </div>
+      <header className="hud-top">
+        <button className="brand" onClick={returnToSpace}><span>PN</span><div><strong>{profile.name}</strong><small>PROMPTVERSE</small></div></button>
+        <div className="sector"><i /> CURRENT SECTOR <strong>{selected ? destinationById[selected].name : nearest.name}</strong></div>
+        <nav aria-label="Portfolio controls">
+          <button onClick={() => setMapOpen((v) => !v)}>Mission Map</button>
+          <button className="icon-button" onClick={() => setSound((v) => !v)} aria-label={`${sound ? 'Mute' : 'Enable'} sound`}>{sound ? '◉' : '○'}</button>
+          <button className="icon-button" onClick={() => setMenuOpen((v) => !v)} aria-label="Open settings">⚙</button>
+        </nav>
+      </header>
 
-      <button
-        className="theme-toggle"
-        type="button"
-        onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
-        aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-      >
-        <span>{theme === 'dark' ? '☀' : '☾'}</span>
-        {theme === 'dark' ? 'Light' : 'Dark'}
-      </button>
+      {!started && <Intro onStart={() => setStarted(true)} onQuickView={() => setFallback(true)} />}
 
-      {showRunner && (
-        <div className={`runner runner-${motion.phase} runner-${motion.direction}`}>
-          <div className="runner-trail" aria-hidden="true"><i /><i /><i /></div>
-          <ThreeAvatar direction={motion.direction} running={motion.phase === 'running'} />
-        </div>
-      )}
+      {started && !landed && !journey && <div className="flight-guide"><span>SCROLL</span><i /><p>Navigate the system</p></div>}
+      {hovered && !journey && !landed && <div className="planet-tooltip"><small>{hovered.name}</small><strong>{hovered.section}</strong><p>{hovered.tagline}</p><span>Click to initiate landing</span></div>}
+
+      {(mapOpen || menuOpen) && <button className="scrim" onClick={() => { setMapOpen(false); setMenuOpen(false); }} aria-label="Close panel" />}
+      <MissionMap open={mapOpen} selected={selected} onSelect={beginJourney} />
+      <Settings open={menuOpen} quality={quality} setQuality={setQuality} fallback={fallback} setFallback={setFallback} />
+
+      {journey && <div className="journey-status"><small>AUTOPILOT ENGAGED</small><strong>Approaching {destinationById[selected].name}</strong><div className="journey-line"><i /></div><button onClick={finishJourney}>Skip journey</button></div>}
+      {landed && <SectionOverlay section={destinationById[selected]} onBack={returnToSpace} formState={formState} onSubmit={submitContact} />}
+      {fallback && <FallbackView onExplore={beginJourney} onClose={() => setFallback(false)} />}
+
+      <footer className="hud-bottom"><span>SYS // ONLINE</span><div className="journey-progress"><i style={{ width: `${progress * 100}%` }} /></div><span>{Math.round(progress * 100).toString().padStart(2, '0')}% JOURNEY</span></footer>
     </main>
   );
 }
 
-function HomeScreen({ goTo }) {
-  return (
-    <section className="screen home-screen">
-      <div className="intro-copy">
-        <p>{profile.designation}</p>
-        <h1>{profile.name}</h1>
-        <span>{profile.intro}</span>
-      </div>
+function LoadingScreen() { return <div className="loading-screen"><div className="loader-orbit"><i /><span>AI</span></div><p>INITIALIZING AI NAVIGATION SYSTEM</p><h1>MISSION: EXPLORE THE PROMPTVERSE</h1><div className="loading-bar"><i /></div></div>; }
 
-      <div className="avatar-map">
-        <div className="game-hud">
-          <span><i /> PORTFOLIO QUEST</span>
-          <strong>Choose a portal</strong>
-        </div>
-        <DirectionButton direction="top" goTo={goTo} />
-        <DirectionButton direction="right" goTo={goTo} />
-        <DirectionButton direction="bottom" goTo={goTo} />
-        <DirectionButton direction="left" goTo={goTo} />
+function Intro({ onStart, onQuickView }) { return <section className="intro-panel"><div className="eyebrow"><i /> TRANSMISSION RECEIVED // 001</div><p className="hello">Hi, I’m</p><h1>{profile.name}</h1><h2>{profile.role}</h2><p className="intro-text">{profile.intro}</p><div className="intro-actions"><button className="primary" onClick={onStart}>Begin exploration <span>→</span></button><button onClick={onQuickView}>Quick 2D view</button></div><small className="instruction">Scroll to navigate <b>•</b> Click a planet to explore</small></section>; }
 
-        <button className="core-button" onClick={() => goTo('center')} aria-label="Open works">
-          <ThreeAvatar direction="front" running={false} talking />
-        </button>
-      </div>
+function MissionMap({ open, selected, onSelect }) { return <aside className={`mission-map ${open ? 'open' : ''}`} aria-hidden={!open}><header><small>DIRECT NAVIGATION</small><h2>Mission Map</h2><p>Choose a destination. All journeys are skippable.</p></header><div className="map-orbit">{destinations.map((item, index) => <button key={item.id} className={selected === item.id ? 'active' : ''} onClick={() => onSelect(item.id)}><span style={{ '--planet': item.color }}>{String(index + 1).padStart(2, '0')}</span><div><strong>{item.name}</strong><small>{item.section}</small></div><b>↗</b></button>)}</div></aside>; }
 
-      <div className="command-card">
-        <p>Avatar navigation</p>
-        <h2>Click a direction. The 3D avatar turns, runs, then opens that portfolio section.</h2>
-        <div className="mini-actions">
-          <button onClick={() => goTo('right')}>Projects &gt;</button>
-          <button onClick={() => goTo('top')}>Skills ^</button>
-        </div>
-      </div>
-    </section>
-  );
+function Settings({ open, quality, setQuality, fallback, setFallback }) { return <aside className={`settings-panel ${open ? 'open' : ''}`} aria-hidden={!open}><small>SYSTEM SETTINGS</small><h2>Experience</h2><label>Graphics quality<select value={quality} onChange={(e) => setQuality(e.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label className="switch-row">Use accessible 2D mode<input type="checkbox" checked={fallback} onChange={(e) => setFallback(e.target.checked)} /></label><p>Motion preferences from your device are respected automatically.</p></aside>; }
+
+function SectionOverlay({ section, onBack, formState, onSubmit }) {
+  const [walk, setWalk] = useState(0);
+  const [moving, setMoving] = useState(false);
+  const [active, setActive] = useState(null);
+  const stopTimer = useRef(null);
+  const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
+  const discoveries = useMemo(() => {
+    if (section.cards) return section.cards.map((item) => ({ title: item.title, label: item.meta, text: item.text, tags: item.tags }));
+    if (section.groups) return Object.entries(section.groups).map(([title, values]) => ({ title, label: 'SKILL CONSTELLATION', text: values.join(' • '), tags: values }));
+    if (section.timeline) return section.timeline.map((item) => ({ title: item.title, label: item.date, text: item.text }));
+    if (section.facts) return section.facts.map((item, index) => ({ title: item, label: `ORIGIN RECORD 0${index + 1}`, text: index === 0 ? section.body : section.tagline }));
+    return [{ title: 'Communication Uplink', label: 'SIGNAL STATION', text: section.body, contact: true }];
+  }, [section]);
+
+  useEffect(() => {
+    const move = (delta) => {
+      // Keep the astronaut pace deliberate on an endless forward route.
+      setWalk((value) => Math.max(0, value + delta * .00022));
+      setMoving(true); clearTimeout(stopTimer.current); stopTimer.current = setTimeout(() => setMoving(false), 170);
+    };
+    const wheel = (event) => move(event.deltaY);
+    const key = (event) => { if (event.key === 'ArrowDown') move(85); if (event.key === 'ArrowUp') move(-85); };
+    window.addEventListener('wheel', wheel, { passive: true }); window.addEventListener('keydown', key);
+    return () => { window.removeEventListener('wheel', wheel); window.removeEventListener('keydown', key); clearTimeout(stopTimer.current); };
+  }, []);
+
+  const reached = Math.floor(walk * discoveries.length + .05) % discoveries.length;
+  return <section className={`planet-surface section-${section.id}`} style={{ '--planet': section.color, '--accent': section.accent }}>
+    <PlanetExplorer color={section.color} accent={section.accent} progress={walk} moving={moving} reducedMotion={reducedMotion} />
+    <header className="surface-hud"><button onClick={onBack}>← Launch to space</button><div><small>PLANETARY EXPEDITION // {section.name}</small><strong>{section.section}</strong></div><span>{Math.round(walk * 100)}M TRAVELED</span></header>
+    <aside className="surface-brief"><small>MISSION OBJECTIVE</small><h2>{section.heading}</h2><p>{section.tagline}</p><div><i /> Scroll to run • Move pointer up for a higher view</div></aside>
+    <div className={`discovery-stack ${section.id === 'about' ? 'story-carousel' : ''}`}>{discoveries.map((item, index) => {
+      const threshold = (index + .22) / discoveries.length; const visible = section.id === 'about' || walk >= threshold - .12;
+      const relative = (index - reached + discoveries.length) % discoveries.length;
+      const storyClass = section.id === 'about' ? (relative === 0 ? 'story-current' : relative === discoveries.length - 1 ? 'story-previous' : 'story-next') : '';
+      return <button key={item.title} className={`${visible ? 'visible' : ''} ${reached === index ? 'nearby' : ''} ${storyClass}`} onClick={() => visible && setActive(index)}><span>{String(index + 1).padStart(2, '0')}</span><div><small>{item.label}</small><strong>{item.title}</strong></div><b>{visible ? 'OPEN +' : 'LOCKED'}</b></button>;
+    })}</div>
+    <div className="walk-meter"><span>LANDING SITE</span><i><b style={{ width: `${(walk % 1) * 100}%` }} /></i><span>FORWARD ∞</span></div>
+    {active !== null && <div className="hologram-panel"><button className="hologram-close" onClick={() => setActive(null)}>×</button><small>{discoveries[active].label}</small><h2>{discoveries[active].title}</h2><p>{discoveries[active].text}</p>{discoveries[active].tags && <div className="hologram-tags">{discoveries[active].tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}{discoveries[active].contact ? <ContactForm state={formState} onSubmit={onSubmit} /> : <button className="hologram-action">Open full mission record ↗</button>}</div>}
+  </section>;
 }
 
-function DirectionButton({ direction, goTo }) {
-  const item = directions[direction];
+function ContactForm({ state, onSubmit }) { if (state === 'success') return <div className="transmission-success"><span>↗</span><h3>Transmission sent successfully.</h3><p>I’ll respond when your signal reaches my station.</p></div>; return <form className="contact-form" onSubmit={onSubmit}><label>Name<input required name="name" placeholder="Your name" /></label><label>Email<input required type="email" name="email" placeholder="you@company.com" /></label><label>Project type<select name="type"><option>AI assistant</option><option>Prompt system</option><option>Workflow automation</option><option>Other mission</option></select></label><label>Mission brief<textarea required name="message" placeholder="What are you trying to build?" /></label><button disabled={state === 'loading'}>{state === 'loading' ? 'Launching transmission…' : 'Send transmission ↗'}</button></form>; }
 
-  return (
-    <button className={`direction direction-${direction}`} onClick={() => goTo(direction)}>
-      <span className="portal-ring" aria-hidden="true" />
-      <span className="direction-symbol">{item.action}</span>
-      <strong>{item.label}</strong>
-      <small>Enter portal</small>
-    </button>
-  );
-}
-
-function DetailScreen({ view, goHome }) {
-  const section = directions[view];
-
-  return (
-    <section className={`screen detail-screen detail-${view}`}>
-      <header className="detail-header">
-        <button onClick={goHome}>Back to Avatar Hub</button>
-        <div>
-          <p>{section.action}</p>
-          <h1>{section.title}</h1>
-          <span>{section.subtitle}</span>
-        </div>
-      </header>
-
-      <div className="detail-body">
-        <SmallAvatar view={view} />
-        <SectionContent view={view} />
-      </div>
-    </section>
-  );
-}
-
-function SectionContent({ view }) {
-  const content = useMemo(() => {
-    if (view === 'right') {
-      return (
-        <div className="project-showcase">
-          {profile.projects.map((project, index) => (
-            <article className="project-tile" key={project.title}>
-              <div className="project-number">0{index + 1}</div>
-              <span>{project.category}</span>
-              <h2>{project.title}</h2>
-              <p>{project.result}</p>
-              <div>
-                {project.stack.map((item) => (
-                  <small key={item}>{item}</small>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      );
-    }
-
-    if (view === 'top') {
-      return (
-        <div className="skill-board">
-          {profile.skills.map((skill, index) => (
-            <div key={skill}>
-              <strong>{String(index + 1).padStart(2, '0')}</strong>
-              <span>{skill}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (view === 'bottom') {
-      return (
-        <div className="contact-panel">
-          <a href={`mailto:${profile.email}`}>{profile.email}</a>
-          <a href={`tel:${profile.phone.replaceAll(' ', '')}`}>{profile.phone}</a>
-          <span>{profile.location}</span>
-        </div>
-      );
-    }
-
-    if (view === 'left') {
-      return (
-        <div className="about-panel">
-          <p>{profile.about}</p>
-          <div>
-            <span>Focus</span>
-            <strong>Prompt systems, chatbot UX, AI workflows, and output quality.</strong>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="work-console">
-        {profile.works.map((work, index) => (
-          <article key={work}>
-            <span>LOG 0{index + 1}</span>
-            <p>{work}</p>
-          </article>
-        ))}
-      </div>
-    );
-  }, [view]);
-
-  return <div className="content-stage">{content}</div>;
-}
-
-function SmallAvatar({ view }) {
-  return (
-    <div className={`small-avatar small-avatar-${view}`}>
-      <ThreeAvatar direction={view} running={false} />
-    </div>
-  );
-}
+function FallbackView({ onExplore, onClose }) { return <section className="fallback-view"><header><div><small>ACCESSIBLE NAVIGATION</small><h1>Explore the Promptverse</h1></div><button onClick={onClose}>Return to 3D</button></header><p>{profile.intro}</p><div className="fallback-grid">{destinations.map((item) => <article key={item.id} style={{ '--planet': item.color }}><small>{item.name}</small><h2>{item.section}</h2><p>{item.tagline}</p><button onClick={() => onExplore(item.id)}>Open section →</button></article>)}</div></section>; }
 
 createRoot(document.getElementById('root')).render(<App />);
