@@ -144,82 +144,43 @@ export default function SpaceScene({ progress, selected, journey, quality, reduc
         if (t >= 1 && !doneSent) { doneSent = true; callbackRef.current.onJourneyDone?.(); }
       } else {
         astronaut.visible = false;
-        let routeX = Math.sin(state.progress * Math.PI * 4) * 4.15;
-        let routeY = Math.sin(state.progress * Math.PI * 3) * 1.35 + Math.sin(state.progress * Math.PI * 7) * .24;
-        const routeYaw = -Math.cos(state.progress * Math.PI * 4) * .34;
-        const routePitch = Math.cos(state.progress * Math.PI * 3) * -.1;
-        ship.position.z += (targetZ - ship.position.z) * .055;
-
-        // Bend the existing S-shaped route around each planet's atmosphere.
-        // The required sideways clearance grows as the rocket reaches the
-        // planet's Z plane, so the original path is unchanged between planets.
-        destinations.forEach((planet, index) => {
-          const clearance = planet.size * 1.09 + .95;
-          const dz = ship.position.z - planet.position[2];
-          if (Math.abs(dz) >= clearance) return;
-          const requiredSideClearance = Math.sqrt(clearance * clearance - dz * dz);
-          let dx = routeX - planet.position[0];
-          let dy = routeY - planet.position[1];
-          let sideDistance = Math.hypot(dx, dy);
-          if (sideDistance < .001) {
-            dx = index % 2 === 0 ? -1 : 1;
-            dy = .35;
-            sideDistance = Math.hypot(dx, dy);
-          }
-          if (sideDistance < requiredSideClearance) {
-            const push = (requiredSideClearance - sideDistance + .28) / sideDistance;
-            routeX += dx * push;
-            routeY += dy * push;
-          }
-        });
-
-        ship.position.x += (routeX - ship.position.x) * .045;
-        ship.position.y += (routeY - ship.position.y) * .045;
-
-        // Interpolation can briefly lag behind the safe route. Project the
-        // rocket back to the atmosphere boundary without changing its depth.
-        destinations.forEach((planet, index) => {
-          const clearance = planet.size * 1.09 + .95;
-          const dz = ship.position.z - planet.position[2];
-          if (Math.abs(dz) >= clearance) return;
-          const requiredSideClearance = Math.sqrt(clearance * clearance - dz * dz);
-          let dx = ship.position.x - planet.position[0];
-          let dy = ship.position.y - planet.position[1];
-          let sideDistance = Math.hypot(dx, dy);
-          if (sideDistance < .001) {
-            dx = index % 2 === 0 ? -1 : 1;
-            dy = .35;
-            sideDistance = Math.hypot(dx, dy);
-          }
-          if (sideDistance < requiredSideClearance) {
-            ship.position.x = planet.position[0] + (dx / sideDistance) * requiredSideClearance;
-            ship.position.y = planet.position[1] + (dy / sideDistance) * requiredSideClearance;
-          }
-        });
-
         const previousProgress = ship.userData.lastProgress ?? state.progress;
         const progressDelta = state.progress - previousProgress;
         if (progressDelta > .00002) ship.userData.travelDirection = 1;
         else if (progressDelta < -.00002) ship.userData.travelDirection = -1;
         if (!ship.userData.travelDirection) ship.userData.travelDirection = 1;
 
-        // The model's nose points toward local -Z. Turn it around while the
-        // visitor scrolls backward, then face it forward again on the return.
         const returning = ship.userData.travelDirection < 0;
-        const facingYaw = returning ? Math.PI - routeYaw : routeYaw;
+        const targetYaw = returning ? Math.PI : 0;
         const yawDifference = Math.atan2(
-          Math.sin(facingYaw - ship.rotation.y),
-          Math.cos(facingYaw - ship.rotation.y),
+          Math.sin(targetYaw - ship.rotation.y),
+          Math.cos(targetYaw - ship.rotation.y),
         );
-        ship.rotation.z += (progressDelta * -3.1 - ship.rotation.z) * .08;
-        ship.rotation.y += yawDifference * .075;
-        ship.rotation.x += (routePitch - ship.rotation.x) * .055;
+        ship.rotation.y += yawDifference * .085;
+
+        // On a direction change, turn through 90 degrees before travelling.
+        // The rest of the U-turn completes smoothly while the rocket moves.
+        const readyToTravel = Math.abs(yawDifference) <= Math.PI / 2 + .04;
+        if (readyToTravel) ship.position.z += (targetZ - ship.position.z) * .055;
+        ship.position.x += (Math.sin(state.progress * Math.PI * 3) * .45 - ship.position.x) * .025;
+        ship.rotation.z += (progressDelta * -2.2 - ship.rotation.z) * .08;
+        // Always restore the normal horizontal flight pose after leaving a planet.
+        ship.rotation.x += (0 - ship.rotation.x) * 0.09;
         camera.fov += (55 - camera.fov) * .08; camera.updateProjectionMatrix();
         ship.userData.lastProgress = state.progress;
-        camera.position.z += (ship.position.z + 7.8 - camera.position.z) * .04;
-        camera.position.x += (ship.position.x * .42 - camera.position.x) * .04;
-        camera.position.y += (ship.position.y + 2.35 - camera.position.y) * .04;
-        camera.lookAt(ship.position.x * .35, ship.position.y * .55, ship.position.z - 3.5);
+
+        // Keep the camera behind the rocket for both directions. During the
+        // U-turn it travels around the rocket horizontally instead of rising
+        // into the empty top-down view seen in the recording.
+        const cameraDistance = 7.6;
+        const cameraTargetX = ship.position.x + Math.sin(ship.rotation.y) * cameraDistance;
+        const cameraTargetZ = ship.position.z + Math.cos(ship.rotation.y) * cameraDistance;
+        const lookAheadX = ship.position.x - Math.sin(ship.rotation.y) * 3;
+        const lookAheadZ = ship.position.z - Math.cos(ship.rotation.y) * 3;
+        camera.position.x += (cameraTargetX - camera.position.x) * .045;
+        camera.position.y += (2.2 - camera.position.y) * .04;
+        camera.position.z += (cameraTargetZ - camera.position.z) * .045;
+        camera.lookAt(lookAheadX, 0, lookAheadZ);
       }
       const moving = Math.abs(targetZ - ship.position.z) > .08 || state.journey;
       ship.children.filter((item) => item.name === 'engineGlow').forEach((glow) => { glow.scale.y = 0.75 + (moving ? Math.sin(now * .02) * .18 + .65 : .05); glow.material.opacity = moving ? .9 : .35; });
