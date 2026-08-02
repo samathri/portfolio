@@ -85,3 +85,23 @@
   .surface-hud>span{display:none}
   .surface-hud{grid-template-columns:1fr}
 }
+
+/* Projects planet: compact holographic carousel leaves the 3D route visible. */
+.section-projects .discovery-stack button{overflow:hidden}
+.section-projects .discovery-stack button:after{content:"";position:absolute;inset:auto 0 0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.35}
+.section-projects .discovery-stack button.nearby:after{opacity:1;box-shadow:0 0 15px var(--accent)}
+
+@media(max-width:768px){
+  .section-projects .surface-brief{width:calc(100vw - 28px);max-width:none}
+  .section-projects .discovery-stack{left:14px;right:14px;bottom:72px;width:auto;max-height:none;display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;padding:8px 1px 10px;scroll-snap-type:x mandatory;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
+  .section-projects .discovery-stack::-webkit-scrollbar{display:none}
+  .section-projects .discovery-stack button{position:relative;inset:auto;flex:0 0 min(82vw,340px);width:auto;min-height:72px;grid-template-columns:35px 1fr auto;scroll-snap-align:center;transform:translateY(8px);border-color:color-mix(in srgb,var(--accent) 38%,transparent);background:linear-gradient(135deg,color-mix(in srgb,var(--planet) 28%,#030914ed),#030914ee);box-shadow:0 12px 30px #0007}
+  .section-projects .discovery-stack button.visible{transform:none}
+  .section-projects .discovery-stack button.nearby{box-shadow:0 0 26px color-mix(in srgb,var(--accent) 22%,transparent),0 14px 34px #0008}
+  .section-projects .walk-meter{bottom:43px}
+}
+
+@media(max-width:430px){
+  .section-projects .discovery-stack button{flex-basis:calc(100vw - 42px)}
+  .section-projects .discovery-stack strong{font-size:12px}
+}

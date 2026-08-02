@@ -134,7 +134,7 @@ function SectionOverlay({ section, onBack, formState, onSubmit }) {
 
   const reached = Math.floor(walk * discoveries.length + .05) % discoveries.length;
   return <section className={`planet-surface section-${section.id}`} style={{ '--planet': section.color, '--accent': section.accent }} onTouchStart={(event) => { surfaceTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => { if (active !== null) return; const delta = (surfaceTouchStart.current || 0) - event.changedTouches[0].clientY; if (Math.abs(delta) > 12) move(delta * 3.2); }}>
-    <PlanetExplorer color={section.color} accent={section.accent} progress={walk} moving={moving} reducedMotion={reducedMotion} />
+    <PlanetExplorer color={section.color} accent={section.accent} progress={walk} moving={moving} reducedMotion={reducedMotion} sectionId={section.id} items={section.cards} />
     <header className="surface-hud"><button onClick={onBack}>← Launch to space</button><div><small>PLANETARY EXPEDITION // {section.name}</small><strong>{section.section}</strong></div><span>{Math.round(walk * 100)}M TRAVELED</span></header>
     <aside className="surface-brief"><small>MISSION OBJECTIVE</small><h2>{section.heading}</h2><p>{section.tagline}</p><div><i /> Scroll to run • Move pointer up for a higher view</div></aside>
     <div className={`discovery-stack ${section.id === 'about' ? 'story-carousel' : ''}`}>{discoveries.map((item, index) => {

@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
+const EMPTY_ITEMS = [];
+
 function astronautModel() {
   const root = new THREE.Group();
   const white = new THREE.MeshStandardMaterial({ color: '#edf7fa', roughness: .4 });
@@ -28,7 +30,61 @@ function landedRocket(color) {
   root.scale.setScalar(.82); return root;
 }
 
-export default function PlanetExplorer({ color, accent, progress, moving, reducedMotion }) {
+function projectPreviewTexture(project, projectIndex, slideIndex, accent) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 960; canvas.height = 540;
+  const ctx = canvas.getContext('2d');
+  const palettes = [
+    ['#07152b', '#16c8ee'], ['#170b29', '#db62ff'], ['#071e21', '#4de2b1'],
+    ['#24120d', '#ff9d66'], ['#111529', '#8ca7ff'],
+  ];
+  const [base, glow] = palettes[projectIndex % palettes.length];
+  const gradient = ctx.createLinearGradient(0, 0, 960, 540);
+  gradient.addColorStop(0, base); gradient.addColorStop(1, '#03060d');
+  ctx.fillStyle = gradient; ctx.fillRect(0, 0, 960, 540);
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, 960, 10);
+  ctx.globalAlpha = .13; ctx.fillStyle = accent;
+  ctx.beginPath(); ctx.arc(790, 120, 180, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#dceeff'; ctx.font = '700 25px sans-serif'; ctx.fillText(project.title, 58, 68);
+  ctx.fillStyle = glow; ctx.font = '600 12px monospace'; ctx.fillText((project.meta || 'PROJECT').toUpperCase(), 58, 96);
+  if (slideIndex === 0) {
+    ctx.fillStyle = '#f4f8ff'; ctx.font = '700 55px sans-serif';
+    ctx.fillText('Digital experiences', 58, 200); ctx.fillText('built to perform.', 58, 262);
+    ctx.fillStyle = glow; ctx.fillRect(58, 310, 158, 46);
+    ctx.fillStyle = '#031018'; ctx.font = '700 15px sans-serif'; ctx.fillText('EXPLORE PROJECT', 73, 339);
+  } else if (slideIndex === 1) {
+    ctx.fillStyle = '#c7d6e0'; ctx.font = '600 16px monospace'; ctx.fillText('FEATURED EXPERIENCE', 58, 165);
+    for (let i = 0; i < 3; i += 1) {
+      ctx.fillStyle = i === projectIndex % 3 ? glow : '#132235';
+      ctx.fillRect(58 + i * 270, 205, 235, 165);
+      ctx.fillStyle = '#eff8ff'; ctx.font = '700 20px sans-serif'; ctx.fillText(['HOME', 'SYSTEM', 'RESULT'][i], 78 + i * 270, 338);
+    }
+  } else {
+    ctx.fillStyle = '#f4f8ff'; ctx.font = '700 38px sans-serif'; ctx.fillText('Project outcomes', 58, 175);
+    const bars = [72, 91, 82];
+    bars.forEach((value, i) => { ctx.fillStyle = '#14263a'; ctx.fillRect(58, 225 + i * 72, 650, 24); ctx.fillStyle = glow; ctx.fillRect(58, 225 + i * 72, value * 6.5, 24); });
+    ctx.fillStyle = '#9eb2c1'; ctx.font = '500 14px monospace'; ctx.fillText('DESIGN  •  DEVELOPMENT  •  DELIVERY', 58, 470);
+  }
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function projectScreen(project, index, accent, textureStore) {
+  const group = new THREE.Group();
+  const frameMaterial = new THREE.MeshStandardMaterial({ color: '#07111d', metalness: .72, roughness: .22, emissive: accent, emissiveIntensity: .06 });
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(2.72, 1.72, .14), frameMaterial); frame.position.y = 1.72; group.add(frame);
+  const textures = [0, 1, 2].map((slide) => projectPreviewTexture(project, index, slide, accent)); textureStore.push(...textures);
+  const screenMaterial = new THREE.MeshBasicMaterial({ map: textures[0], toneMapped: false });
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.46), screenMaterial); screen.position.set(0, 1.72, .076); screen.userData = { textures, index }; group.add(screen);
+  const stand = new THREE.Mesh(new THREE.CylinderGeometry(.055, .1, .82, 12), frameMaterial); stand.position.y = .55; group.add(stand);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(.5, .68, .1, 20), frameMaterial); base.position.y = .08; group.add(base);
+  const glow = new THREE.PointLight(accent, 2.2, 4.5); glow.position.set(0, 1.6, .5); group.add(glow);
+  group.userData.screen = screen;
+  return group;
+}
+
+export default function PlanetExplorer({ color, accent, progress, moving, reducedMotion, sectionId, items = EMPTY_ITEMS }) {
   const mountRef = useRef(null);
   const stateRef = useRef({ progress, moving, reducedMotion });
   useEffect(()=>{ stateRef.current={progress,moving,reducedMotion}; },[progress,moving,reducedMotion]);
@@ -47,8 +103,12 @@ export default function PlanetExplorer({ color, accent, progress, moving, reduce
     const ground=new THREE.Mesh(new THREE.PlaneGeometry(30,2400,20,320),groundMat);ground.rotation.x=-Math.PI/2;ground.position.set(0,-.12,-1190);const pos=ground.geometry.attributes.position;for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i);pos.setZ(i,Math.sin(x*.72+seed)*.16+Math.cos(y*.35)*.2+Math.sin((x+y)*1.2)*.055)}pos.needsUpdate=true;ground.geometry.computeVertexNormals();scene.add(ground);
     const pathMat=new THREE.MeshStandardMaterial({color:'#131b25',roughness:.8,emissive:accent,emissiveIntensity:.025});
     const pathTiles=[];for(let i=0;i<150;i++){const slab=new THREE.Mesh(new THREE.BoxGeometry(1.36,.055,.62),pathMat);slab.position.set(0,.04,4-i*.82);scene.add(slab);pathTiles.push(slab)}
-    const beacons=[];
-    [.16,.34,.52,.7,.88].forEach((part,index)=>{const group=new THREE.Group();group.position.set(index%2?2.8:-2.8,0,3-part*48);const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.46+index*.035,0),new THREE.MeshPhysicalMaterial({color:accent,emissive:color,emissiveIntensity:1.15,roughness:.18,metalness:.25,transparent:true,opacity:.9}));crystal.position.y=.75;group.add(crystal);const beam=new THREE.Mesh(new THREE.CylinderGeometry(.018,.14,5,12),new THREE.MeshBasicMaterial({color:accent,transparent:true,opacity:.16}));beam.position.y=3;group.add(beam);scene.add(group);beacons.push(group)});
+    const beacons=[]; const projectScreens=[]; const previewTextures=[];
+    if(sectionId==='projects'){
+      items.slice(0,5).forEach((project,index)=>{const group=projectScreen(project,index,accent,previewTextures);group.position.set(index%2?2.65:-2.65,0,3-(index+1)*7.2);group.rotation.y=index%2?-.18:.18;scene.add(group);projectScreens.push(group)});
+    }else{
+      [.16,.34,.52,.7,.88].forEach((part,index)=>{const group=new THREE.Group();group.position.set(index%2?2.8:-2.8,0,3-part*48);const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.46+index*.035,0),new THREE.MeshPhysicalMaterial({color:accent,emissive:color,emissiveIntensity:1.15,roughness:.18,metalness:.25,transparent:true,opacity:.9}));crystal.position.y=.75;group.add(crystal);const beam=new THREE.Mesh(new THREE.CylinderGeometry(.018,.14,5,12),new THREE.MeshBasicMaterial({color:accent,transparent:true,opacity:.16}));beam.position.y=3;group.add(beam);scene.add(group);beacons.push(group)});
+    }
     const rocket=landedRocket(accent);rocket.position.set(2.6,0,4);rocket.rotation.y=-.5;scene.add(rocket);
     const astronaut=astronautModel();astronaut.position.set(0,0,3);astronaut.rotation.y=Math.PI;scene.add(astronaut);
     let compactView=false;
@@ -56,9 +116,9 @@ export default function PlanetExplorer({ color, accent, progress, moving, reduce
     let elevationTarget=2.9,elevationCurrent=2.9;
     const onPointerMove=(event)=>{const pointerHeight=1-(event.clientY/window.innerHeight);elevationTarget=2.75+pointerHeight*1.35};
     window.addEventListener('pointermove',onPointerMove,{passive:true});
-    let frame,last=performance.now();
-    function animate(now){const dt=Math.min((now-last)/1000,.04);last=now;const state=stateRef.current,targetZ=3-state.progress*48;astronaut.position.z+=(targetZ-astronaut.position.z)*.075;astronaut.position.x*=.92;astronaut.rotation.y=Math.PI;const stride=state.moving&&!state.reducedMotion?Math.sin(now*.009):0;astronaut.children.forEach(part=>{if(part.name==='armL'||part.name==='legR')part.rotation.x=stride*.42;if(part.name==='armR'||part.name==='legL')part.rotation.x=-stride*.42});astronaut.position.y=Math.abs(stride)*.025;elevationCurrent+=(elevationTarget-elevationCurrent)*.055;const cameraX=compactView?2.15:4.7;const cameraDistance=compactView?9.2:7;const cameraHeight=compactView?3.35:elevationCurrent;camera.position.x+=(cameraX-camera.position.x)*.055;camera.position.z+=(astronaut.position.z+cameraDistance-camera.position.z)*.055;camera.position.y+=(cameraHeight-camera.position.y)*.055;camera.lookAt(0,compactView?.82:1,astronaut.position.z-(compactView?3.1:3.8));pathTiles.forEach((tile)=>{const cycleLength=pathTiles.length*.82;while(tile.position.z>astronaut.position.z+8)tile.position.z-=cycleLength;while(tile.position.z<astronaut.position.z-cycleLength+8)tile.position.z+=cycleLength});beacons.forEach((b,i)=>{b.children[0].position.y=.8+Math.sin(now*.002+i)*.14});renderer.render(scene,camera);frame=requestAnimationFrame(animate)}frame=requestAnimationFrame(animate);
-    return()=>{cancelAnimationFrame(frame);window.removeEventListener('pointermove',onPointerMove);observer.disconnect();scene.traverse(o=>{o.geometry?.dispose?.();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose?.()});renderer.dispose();mount.removeChild(renderer.domElement)};
-  },[color,accent,seed]);
+    let frame,last=performance.now(),previousWalk=progress,spinDirection=1;
+    function animate(now){const dt=Math.min((now-last)/1000,.04);last=now;const state=stateRef.current,targetZ=3-state.progress*48;const walkDelta=state.progress-previousWalk;if(walkDelta>.00001)spinDirection=1;else if(walkDelta<-.00001)spinDirection=-1;previousWalk=state.progress;astronaut.position.z+=(targetZ-astronaut.position.z)*.075;astronaut.position.x*=.92;if(state.moving&&!state.reducedMotion)astronaut.rotation.y+=spinDirection*dt*Math.PI*1.35;const stride=state.moving&&!state.reducedMotion?Math.sin(now*.009):0;astronaut.children.forEach(part=>{if(part.name==='armL'||part.name==='legR')part.rotation.x=stride*.42;if(part.name==='armR'||part.name==='legL')part.rotation.x=-stride*.42});astronaut.position.y=Math.abs(stride)*.025;elevationCurrent+=(elevationTarget-elevationCurrent)*.055;const cameraX=compactView?2.15:4.7;const cameraDistance=compactView?9.2:7;const cameraHeight=compactView?3.35:elevationCurrent;camera.position.x+=(cameraX-camera.position.x)*.055;camera.position.z+=(astronaut.position.z+cameraDistance-camera.position.z)*.055;camera.position.y+=(cameraHeight-camera.position.y)*.055;camera.lookAt(0,compactView?.82:1,astronaut.position.z-(compactView?3.1:3.8));pathTiles.forEach((tile)=>{const cycleLength=pathTiles.length*.82;while(tile.position.z>astronaut.position.z+8)tile.position.z-=cycleLength;while(tile.position.z<astronaut.position.z-cycleLength+8)tile.position.z+=cycleLength});beacons.forEach((b,i)=>{b.children[0].position.y=.8+Math.sin(now*.002+i)*.14});projectScreens.forEach((screenGroup,index)=>{const cycleLength=46;while(screenGroup.position.z>astronaut.position.z+7)screenGroup.position.z-=cycleLength;while(screenGroup.position.z<astronaut.position.z-cycleLength+7)screenGroup.position.z+=cycleLength;const screen=screenGroup.userData.screen;const slide=Math.floor(now/2800+index)%screen.userData.textures.length;if(screen.userData.index!==slide){screen.userData.index=slide;screen.material.map=screen.userData.textures[slide];screen.material.needsUpdate=true}screenGroup.position.y=Math.sin(now*.0015+index)*.035});renderer.render(scene,camera);frame=requestAnimationFrame(animate)}frame=requestAnimationFrame(animate);
+    return()=>{cancelAnimationFrame(frame);window.removeEventListener('pointermove',onPointerMove);observer.disconnect();previewTextures.forEach(texture=>texture.dispose());scene.traverse(o=>{o.geometry?.dispose?.();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose?.()});renderer.dispose();mount.removeChild(renderer.domElement)};
+  },[color,accent,seed,sectionId,items]);
   return <div className="planet-explorer-canvas" ref={mountRef} aria-hidden="true"/>;
 }
