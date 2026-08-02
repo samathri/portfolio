@@ -150,6 +150,13 @@ export default function SpaceScene({ progress, selected, journey, quality, reduc
         else if (progressDelta < -.00002) ship.userData.travelDirection = -1;
         if (!ship.userData.travelDirection) ship.userData.travelDirection = 1;
 
+        // Turn automatically only after the rocket has physically reached a
+        // boundary—not merely when the scroll value first touches 0% or 100%.
+        const reachedEnd = state.progress >= .999 && Math.abs(targetZ - ship.position.z) < .15;
+        const reachedStart = state.progress <= .001 && Math.abs(targetZ - ship.position.z) < .15;
+        if (reachedEnd) ship.userData.travelDirection = -1;
+        else if (reachedStart) ship.userData.travelDirection = 1;
+
         const returning = ship.userData.travelDirection < 0;
         const targetYaw = returning ? Math.PI : 0;
         const yawDifference = Math.atan2(
