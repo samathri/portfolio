@@ -107,9 +107,11 @@ function Settings({ open, quality, setQuality, fallback, setFallback, onClose })
 function SectionOverlay({ section, onBack, formState, onSubmit }) {
   const [walk, setWalk] = useState(0);
   const [moving, setMoving] = useState(false);
+  const [hasMoved, setHasMoved] = useState(false);
   const [active, setActive] = useState(null);
   const stopTimer = useRef(null);
   const surfaceTouchStart = useRef(null);
+  const discoveryRef = useRef(null);
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
   const discoveries = useMemo(() => {
     if (section.cards) return section.cards.map((item) => ({ title: item.title, label: item.meta, text: item.text, tags: item.tags }));
@@ -122,6 +124,7 @@ function SectionOverlay({ section, onBack, formState, onSubmit }) {
   const move = useCallback((delta) => {
     // Keep the astronaut pace deliberate on an endless forward route.
     setWalk((value) => Math.max(0, value + delta * .00022));
+    if (Math.abs(delta) > 2) setHasMoved(true);
     setMoving(true); clearTimeout(stopTimer.current); stopTimer.current = setTimeout(() => setMoving(false), 170);
   }, []);
 
@@ -133,11 +136,16 @@ function SectionOverlay({ section, onBack, formState, onSubmit }) {
   }, [move]);
 
   const reached = Math.floor(walk * discoveries.length + .05) % discoveries.length;
-  return <section className={`planet-surface section-${section.id}`} style={{ '--planet': section.color, '--accent': section.accent }} onTouchStart={(event) => { surfaceTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => { if (active !== null) return; const delta = (surfaceTouchStart.current || 0) - event.changedTouches[0].clientY; if (Math.abs(delta) > 12) move(delta * 3.2); }}>
+  useEffect(() => {
+    if (section.id !== 'projects') return;
+    const card = discoveryRef.current?.children?.[reached];
+    card?.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'nearest', inline: 'center' });
+  }, [reached, reducedMotion, section.id]);
+  return <section className={`planet-surface section-${section.id} ${hasMoved ? 'has-explored' : ''}`} style={{ '--planet': section.color, '--accent': section.accent }} onTouchStart={(event) => { surfaceTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => { if (active !== null) return; const delta = (surfaceTouchStart.current || 0) - event.changedTouches[0].clientY; if (Math.abs(delta) > 12) move(delta * 3.2); }}>
     <PlanetExplorer color={section.color} accent={section.accent} progress={walk} moving={moving} reducedMotion={reducedMotion} sectionId={section.id} items={section.cards} />
     <header className="surface-hud"><button onClick={onBack}>← Launch to space</button><div><small>PLANETARY EXPEDITION // {section.name}</small><strong>{section.section}</strong></div><span>{Math.round(walk * 100)}M TRAVELED</span></header>
     <aside className="surface-brief"><small>MISSION OBJECTIVE</small><h2>{section.heading}</h2><p>{section.tagline}</p><div><i /> Scroll to run • Move pointer up for a higher view</div></aside>
-    <div className={`discovery-stack ${section.id === 'about' ? 'story-carousel' : ''}`}>{discoveries.map((item, index) => {
+    <div ref={discoveryRef} className={`discovery-stack ${section.id === 'about' ? 'story-carousel' : ''}`}>{discoveries.map((item, index) => {
       const threshold = (index + .22) / discoveries.length; const visible = section.id === 'about' || walk >= threshold - .12;
       const relative = (index - reached + discoveries.length) % discoveries.length;
       const storyClass = section.id === 'about' ? (relative === 0 ? 'story-current' : relative === discoveries.length - 1 ? 'story-previous' : 'story-next') : '';

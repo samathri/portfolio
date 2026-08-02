@@ -105,3 +105,22 @@
   .section-projects .discovery-stack button{flex-basis:calc(100vw - 42px)}
   .section-projects .discovery-stack strong{font-size:12px}
 }
+
+.surface-brief{transition:opacity .45s ease,transform .55s cubic-bezier(.22,.8,.2,1)}
+.planet-surface.has-explored .surface-brief{opacity:0;transform:translateY(-24px);pointer-events:none}
+
+@media(max-width:768px){
+  .hud-top{grid-template-columns:44px minmax(0,1fr);gap:12px}
+  .hud-top nav{width:auto;max-width:none;min-width:0;display:grid;grid-template-columns:minmax(96px,1fr) 42px 42px;gap:7px}
+  .hud-top nav button:first-child{width:auto;min-width:96px;padding:0 10px;font-size:8px;white-space:nowrap;overflow:visible}
+  .hud-top nav button:first-child:after{content:none}
+  .hud-top nav .icon-button{width:42px;min-width:42px;padding:0}
+  .section-projects.has-explored .discovery-stack{bottom:72px}
+}
+
+@media(max-width:360px){
+  .hud-top{gap:8px;padding-left:10px;padding-right:10px}
+  .hud-top nav{grid-template-columns:minmax(82px,1fr) 40px}
+  .hud-top nav button:first-child{min-width:82px;font-size:7px}
+  .hud-top nav .icon-button:last-child{display:none!important}
+}
