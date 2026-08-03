@@ -18,37 +18,12 @@ function App() {
   const [mapOpen, setMapOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [quality, setQuality] = useState(() => localStorage.getItem('promptverse-quality') || 'medium');
-  const [sound, setSound] = useState(() => localStorage.getItem('promptverse-sound') === 'on');
-  const [audioReady, setAudioReady] = useState(0);
   const [fallback, setFallback] = useState(false);
   const [formState, setFormState] = useState('idle');
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
   const touchStart = useRef(null);
-  const audioContextRef = useRef(null);
-
-  const ensureAudio = useCallback(() => {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return null;
-    if (!audioContextRef.current || audioContextRef.current.state === 'closed') { audioContextRef.current = new AudioContext(); setAudioReady((value) => value + 1); }
-    audioContextRef.current.resume?.();
-    return audioContextRef.current;
-  }, []);
-
-  const toggleSound = useCallback(() => {
-    if (!sound) ensureAudio();
-    setSound((value) => !value);
-  }, [ensureAudio, sound]);
-
   useEffect(() => { const timer = setTimeout(() => setBooted(true), reducedMotion ? 100 : 1800); return () => clearTimeout(timer); }, [reducedMotion]);
   useEffect(() => localStorage.setItem('promptverse-quality', quality), [quality]);
-  useEffect(() => localStorage.setItem('promptverse-sound', sound ? 'on' : 'off'), [sound]);
-  useEffect(() => {
-    if (!sound || audioContextRef.current) return undefined;
-    const unlock = () => ensureAudio();
-    window.addEventListener('pointerdown', unlock, { once: true }); window.addEventListener('keydown', unlock, { once: true });
-    return () => { window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock); };
-  }, [ensureAudio, sound]);
-  useEffect(() => () => { audioContextRef.current?.close?.().catch?.(() => {}); }, []);
   useEffect(() => {
     const id = location.pathname.split('/').filter(Boolean)[0];
     if (destinationById[id]) { setBooted(true); setStarted(true); setSelected(id); setLanded(true); setProgress(destinations.findIndex((item) => item.id === id) / (destinations.length - 1)); }
@@ -80,7 +55,6 @@ function App() {
   const nearest = nearestMatch.item;
   const nearbyPlanet = nearestMatch.distance <= .065 ? nearestMatch.item : null;
   const indicatedPlanet = hovered || nearbyPlanet;
-  const soundMode = journey ? 'landing' : landed ? 'planet' : 'space';
 
   const submitContact = (event) => {
     event.preventDefault(); setFormState('loading');
@@ -91,7 +65,6 @@ function App() {
 
   return (
     <main className={`promptverse ${started ? 'is-started' : ''} ${landed ? 'is-landed' : ''}`} onTouchStart={(e) => { touchStart.current = e.touches[0].clientY; }} onTouchEnd={(e) => { if (!started || landed || journey || mapOpen || menuOpen || fallback) return; const delta = (touchStart.current || 0) - e.changedTouches[0].clientY; setProgress((value) => clamp(value + delta * .0018, 0, 1)); }}>
-      <AmbientSound enabled={sound} mode={soundMode} contextRef={audioContextRef} ready={audioReady} />
       {!fallback && <SpaceScene progress={progress} selected={selected} journey={journey} quality={quality} reducedMotion={reducedMotion} focusedPlanetId={indicatedPlanet?.id} onPlanetClick={beginJourney} onPlanetHover={setHovered} onJourneyDone={finishJourney} />}
       <div className="space-noise" />
 
@@ -100,7 +73,6 @@ function App() {
         <div className="sector"><i /> CURRENT SECTOR <strong>{selected ? destinationById[selected].name : nearest.name}</strong></div>
         <nav aria-label="Portfolio controls">
           <button onClick={() => setMapOpen((v) => !v)}>Mission Map</button>
-          <button className="icon-button" onClick={toggleSound} aria-label={`${sound ? 'Mute' : 'Enable'} sound`}>{sound ? '◉' : '○'}</button>
           <button className="icon-button" onClick={() => setMenuOpen((v) => !v)} aria-label="Open settings">⚙</button>
         </nav>
       </header>
@@ -115,7 +87,7 @@ function App() {
       <Settings open={menuOpen} quality={quality} setQuality={setQuality} fallback={fallback} setFallback={setFallback} onClose={() => setMenuOpen(false)} />
 
       {journey && <div className="journey-status"><small>AUTOPILOT ENGAGED</small><strong>Approaching {destinationById[selected].name}</strong><div className="journey-line"><i /></div><button onClick={finishJourney}>Skip journey</button></div>}
-      {landed && <SectionOverlay section={destinationById[selected]} onBack={returnToSpace} formState={formState} onSubmit={submitContact} />}
+      {landed && <SectionOverlay section={destinationById[selected]} initialProjectSlug={selected === 'projects' ? location.pathname.split('/').filter(Boolean)[1] : null} onBack={returnToSpace} formState={formState} onSubmit={submitContact} />}
       {fallback && <FallbackView onExplore={beginJourney} onClose={() => setFallback(false)} />}
 
       <footer className="hud-bottom"><span>SYS // ONLINE</span><div className="journey-progress"><i style={{ width: `${progress * 100}%` }} /></div><span>{Math.round(progress * 100).toString().padStart(2, '0')}% JOURNEY</span></footer>
@@ -125,65 +97,40 @@ function App() {
 
 function LoadingScreen() { return <div className="loading-screen"><div className="loader-orbit"><i /><span>AI</span></div><p>INITIALIZING AI NAVIGATION SYSTEM</p><h1>MISSION: EXPLORE THE PROMPTVERSE</h1><div className="loading-bar"><i /></div></div>; }
 
-function AmbientSound({ enabled, mode, contextRef, ready }) {
-  useEffect(() => {
-    const context = contextRef.current;
-    if (!enabled || !context) return undefined;
-    context.resume?.();
-    const soundscapes = {
-      space: { volume: .095, filter: 720, lfo: .075, depth: 135, frequencies: [46.25, 69.3, 92.5, 138.6], noise: 0 },
-      landing: { volume: .145, filter: 430, lfo: .32, depth: 180, frequencies: [34, 51, 68, 102], noise: .075 },
-      planet: { volume: .085, filter: 980, lfo: .045, depth: 210, frequencies: [65.41, 98, 130.81, 196], noise: .028 },
-    };
-    const config = soundscapes[mode] || soundscapes.space;
-    const master = context.createGain(); master.gain.setValueAtTime(.0001, context.currentTime); master.gain.exponentialRampToValueAtTime(config.volume, context.currentTime + .8); master.connect(context.destination);
-    const filter = context.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = config.filter; filter.Q.value = mode === 'landing' ? 1.4 : .75; filter.connect(master);
-    const oscillators = config.frequencies.map((frequency, index) => {
-      const oscillator = context.createOscillator(); const gain = context.createGain();
-      oscillator.type = mode === 'landing' && index === 0 ? 'sawtooth' : index % 2 ? 'sine' : 'triangle'; oscillator.frequency.value = frequency; oscillator.detune.value = index * 3 - 4;
-      gain.gain.value = index === 0 ? .3 : .13; oscillator.connect(gain); gain.connect(filter); oscillator.start();
-      return oscillator;
-    });
-    const activeSources = [...oscillators];
-    if (config.noise) {
-      const duration = 2; const buffer = context.createBuffer(1, context.sampleRate * duration, context.sampleRate); const channel = buffer.getChannelData(0);
-      for (let index = 0; index < channel.length; index += 1) channel[index] = Math.random() * 2 - 1;
-      const noise = context.createBufferSource(); const noiseFilter = context.createBiquadFilter(); const noiseGain = context.createGain();
-      noise.buffer = buffer; noise.loop = true; noiseFilter.type = mode === 'landing' ? 'lowpass' : 'bandpass'; noiseFilter.frequency.value = mode === 'landing' ? 310 : 460; noiseFilter.Q.value = mode === 'landing' ? .55 : .9; noiseGain.gain.value = config.noise;
-      noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(master); noise.start(); activeSources.push(noise);
-    }
-    const lfo = context.createOscillator(); const lfoGain = context.createGain(); lfo.frequency.value = config.lfo; lfoGain.gain.value = config.depth; lfo.connect(lfoGain); lfoGain.connect(filter.frequency); lfo.start(); activeSources.push(lfo);
-    return () => {
-      master.gain.cancelScheduledValues(context.currentTime); master.gain.setTargetAtTime(.0001, context.currentTime, .06);
-      activeSources.forEach((source) => { try { source.stop(context.currentTime + .3); } catch {} });
-      window.setTimeout(() => { try { master.disconnect(); filter.disconnect(); } catch {} }, 360);
-    };
-  }, [contextRef, enabled, mode, ready]);
-  return null;
-}
-
 function Intro({ onStart, onQuickView }) { return <section className="intro-panel"><div className="eyebrow"><i /> TRANSMISSION RECEIVED // 001</div><p className="hello">Hi, I’m</p><h1>{profile.name}</h1><h2>{profile.role}</h2><p className="intro-text">{profile.intro}</p><div className="intro-actions"><button className="primary" onClick={onStart}>Begin exploration <span>→</span></button><button onClick={onQuickView}>Quick 2D view</button></div><small className="instruction">Scroll to navigate <b>•</b> Click a planet to explore</small></section>; }
 
 function MissionMap({ open, selected, onSelect, onClose }) { return <aside className={`mission-map ${open ? 'open' : ''}`} aria-hidden={!open}><button className="panel-close" onClick={onClose} aria-label="Close mission map">×</button><header><small>DIRECT NAVIGATION</small><h2>Mission Map</h2><p>Choose a destination. All journeys are skippable.</p></header><div className="map-orbit">{destinations.map((item, index) => <button key={item.id} className={selected === item.id ? 'active' : ''} onClick={() => onSelect(item.id)}><span style={{ '--planet': item.color }}>{String(index + 1).padStart(2, '0')}</span><div><strong>{item.name}</strong><small>{item.section}</small></div><b>↗</b></button>)}</div></aside>; }
 
 function Settings({ open, quality, setQuality, fallback, setFallback, onClose }) { return <aside className={`settings-panel ${open ? 'open' : ''}`} aria-hidden={!open}><button className="panel-close" onClick={onClose} aria-label="Close settings">×</button><small>SYSTEM SETTINGS</small><h2>Experience</h2><label>Graphics quality<select value={quality} onChange={(e) => setQuality(e.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label className="switch-row">Use accessible 2D mode<input type="checkbox" checked={fallback} onChange={(e) => setFallback(e.target.checked)} /></label><p>Motion preferences from your device are respected automatically.</p></aside>; }
 
-function SectionOverlay({ section, onBack, formState, onSubmit }) {
+function SectionOverlay({ section, initialProjectSlug, onBack, formState, onSubmit }) {
   const [walk, setWalk] = useState(0);
   const [moving, setMoving] = useState(false);
   const [hasMoved, setHasMoved] = useState(false);
-  const [active, setActive] = useState(null);
+  const [active, setActive] = useState(() => {
+    if (section.id !== 'projects' || !initialProjectSlug) return null;
+    const index = section.cards.findIndex((item) => item.slug === initialProjectSlug);
+    return index >= 0 ? index : null;
+  });
   const stopTimer = useRef(null);
   const surfaceTouchStart = useRef(null);
   const discoveryRef = useRef(null);
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
   const discoveries = useMemo(() => {
-    if (section.cards) return section.cards.map((item) => ({ title: item.title, label: item.meta, text: item.text, tags: item.tags }));
+    if (section.cards) return section.cards.map((item) => ({ ...item, label: item.meta }));
     if (section.groups) return Object.entries(section.groups).map(([title, values]) => ({ title, label: 'SKILL CONSTELLATION', text: values.join(' • '), tags: values }));
     if (section.timeline) return section.timeline.map((item) => ({ title: item.title, label: item.date, text: item.text }));
     if (section.facts) return section.facts.map((item, index) => ({ title: item, label: `ORIGIN RECORD 0${index + 1}`, text: index === 0 ? section.body : section.tagline }));
     return [{ title: 'Communication Uplink', label: 'SIGNAL STATION', text: section.body, contact: true }];
   }, [section]);
+  const openDiscovery = useCallback((index) => {
+    setActive(index);
+    if (section.id === 'projects') history.pushState({}, '', `/projects/${discoveries[index].slug}`);
+  }, [discoveries, section.id]);
+  const closeDiscovery = useCallback(() => {
+    setActive(null);
+    if (section.id === 'projects') history.pushState({}, '', '/projects');
+  }, [section.id]);
 
   const move = useCallback((delta) => {
     // Keep the astronaut pace deliberate on an endless forward route.
@@ -205,20 +152,36 @@ function SectionOverlay({ section, onBack, formState, onSubmit }) {
     const card = discoveryRef.current?.children?.[reached];
     card?.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'nearest', inline: 'center' });
   }, [reached, reducedMotion, section.id]);
-  return <section className={`planet-surface section-${section.id} ${hasMoved ? 'has-explored' : ''}`} style={{ '--planet': section.color, '--accent': section.accent }} onTouchStart={(event) => { surfaceTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => { if (active !== null) return; const delta = (surfaceTouchStart.current || 0) - event.changedTouches[0].clientY; if (Math.abs(delta) > 12) move(delta * 3.2); }}>
+  return <section className={`planet-surface section-${section.id} ${hasMoved ? 'has-explored' : ''} ${active !== null && section.id === 'projects' ? 'project-detail-open' : ''}`} style={{ '--planet': section.color, '--accent': section.accent }} onTouchStart={(event) => { surfaceTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => { if (active !== null) return; const delta = (surfaceTouchStart.current || 0) - event.changedTouches[0].clientY; if (Math.abs(delta) > 12) move(delta * 3.2); }}>
     <PlanetExplorer color={section.color} accent={section.accent} progress={walk} moving={moving} reducedMotion={reducedMotion} sectionId={section.id} items={section.cards} />
     <header className="surface-hud"><button onClick={onBack}>← Launch to space</button><div><small>PLANETARY EXPEDITION // {section.name}</small><strong>{section.section}</strong></div><span>{Math.round(walk * 100)}M TRAVELED</span></header>
     <aside className="surface-brief"><small>MISSION OBJECTIVE</small><h2>{section.heading}</h2><p>{section.tagline}</p><div><i /> Scroll to run • Move pointer up for a higher view</div></aside>
     <div className="surface-scroll-cue" role="note" aria-label="Scroll up to move backward. Scroll down to move forward."><small>SCROLL / SWIPE</small><span className="cue-back"><i>↑</i><b>BACK</b></span><span className="cue-forward"><i>↓</i><b>FORWARD</b></span></div>
     <div ref={discoveryRef} className={`discovery-stack ${section.id === 'about' ? 'story-carousel' : ''}`}>{discoveries.map((item, index) => {
-      const threshold = (index + .22) / discoveries.length; const visible = section.id === 'about' || walk >= threshold - .12;
+      const threshold = (index + .22) / discoveries.length; const visible = section.id === 'about' || section.id === 'projects' || walk >= threshold - .12;
       const relative = (index - reached + discoveries.length) % discoveries.length;
       const storyClass = section.id === 'about' ? (relative === 0 ? 'story-current' : relative === discoveries.length - 1 ? 'story-previous' : 'story-next') : '';
-      return <button key={item.title} className={`${visible ? 'visible' : ''} ${reached === index ? 'nearby' : ''} ${storyClass}`} onClick={() => visible && setActive(index)}><span>{String(index + 1).padStart(2, '0')}</span><div><small>{item.label}</small><strong>{item.title}</strong></div><b>{visible ? 'OPEN +' : 'LOCKED'}</b></button>;
+      return <button key={item.title} className={`${visible ? 'visible' : ''} ${reached === index ? 'nearby' : ''} ${storyClass}`} onClick={() => visible && openDiscovery(index)}><span>{String(index + 1).padStart(2, '0')}</span><div><small>{item.label}</small><strong>{item.title}</strong></div><b>{visible ? 'OPEN +' : 'LOCKED'}</b></button>;
     })}</div>
     <div className="walk-meter"><span>LANDING SITE</span><i><b style={{ width: `${(walk % 1) * 100}%` }} /></i><span>FORWARD ∞</span></div>
-    {active !== null && <div className="hologram-panel"><button className="hologram-close" onClick={() => setActive(null)}>×</button><small>{discoveries[active].label}</small><h2>{discoveries[active].title}</h2><p>{discoveries[active].text}</p>{discoveries[active].tags && <div className="hologram-tags">{discoveries[active].tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}{discoveries[active].contact ? <ContactForm state={formState} onSubmit={onSubmit} /> : <button className="hologram-action">Open full mission record ↗</button>}</div>}
+    {active !== null && (section.id === 'projects' ? <ProjectDetail project={discoveries[active]} onClose={closeDiscovery} /> : <div className="hologram-panel"><button className="hologram-close" onClick={closeDiscovery}>×</button><small>{discoveries[active].label}</small><h2>{discoveries[active].title}</h2><p>{discoveries[active].text}</p>{discoveries[active].tags && <div className="hologram-tags">{discoveries[active].tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}{discoveries[active].contact && <ContactForm state={formState} onSubmit={onSubmit} />}</div>)}
   </section>;
+}
+
+function ProjectDetail({ project, onClose }) {
+  return <article className="project-detail" aria-label={`${project.title} project details`}>
+    <header><button onClick={onClose}>← Back to Projects Planet</button><small>PROJECT MISSION RECORD</small><span>{project.meta}</span></header>
+    <div className="project-detail-body">
+      <section className="project-detail-hero"><small>SELECTED PROJECT</small><h1>{project.title}</h1><p>{project.text}</p><div className="hologram-tags">{project.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></section>
+      <div className="project-detail-grid">
+        <section><small>01 / CHALLENGE</small><h2>What needed to be solved</h2><p>{project.challenge}</p></section>
+        <section><small>02 / SOLUTION</small><h2>How it was approached</h2><p>{project.solution}</p></section>
+        <section><small>03 / CONTRIBUTION</small><h2>My role</h2><p>{project.contribution}</p></section>
+        <section><small>04 / OUTCOME</small><h2>Project result</h2><p>{project.outcome}</p></section>
+      </div>
+      <section className="project-features"><small>SYSTEM CAPABILITIES</small><h2>Key features</h2><ul>{project.features.map((feature) => <li key={feature}>{feature}</li>)}</ul></section>
+    </div>
+  </article>;
 }
 
 function ContactForm({ state, onSubmit }) { if (state === 'success') return <div className="transmission-success"><span>↗</span><h3>Transmission sent successfully.</h3><p>I’ll respond when your signal reaches my station.</p></div>; return <form className="contact-form" onSubmit={onSubmit}><label>Name<input required name="name" placeholder="Your name" /></label><label>Email<input required type="email" name="email" placeholder="you@company.com" /></label><label>Project type<select name="type"><option>AI assistant</option><option>Prompt system</option><option>Workflow automation</option><option>Other mission</option></select></label><label>Mission brief<textarea required name="message" placeholder="What are you trying to build?" /></label><button disabled={state === 'loading'}>{state === 'loading' ? 'Launching transmission…' : 'Send transmission ↗'}</button></form>; }
