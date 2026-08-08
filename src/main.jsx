@@ -107,6 +107,7 @@ function SectionOverlay({ section, initialProjectSlug, onBack, formState, onSubm
   const [walk, setWalk] = useState(0);
   const [moving, setMoving] = useState(false);
   const [hasMoved, setHasMoved] = useState(false);
+  const [cockpitIndex, setCockpitIndex] = useState(0);
   const [active, setActive] = useState(() => {
     if (section.id !== 'projects' || !initialProjectSlug) return null;
     const index = section.cards.findIndex((item) => item.slug === initialProjectSlug);
@@ -140,11 +141,12 @@ function SectionOverlay({ section, initialProjectSlug, onBack, formState, onSubm
   }, []);
 
   useEffect(() => {
+    if (section.id === 'projects') return undefined;
     const wheel = (event) => move(event.deltaY);
     const key = (event) => { if (event.key === 'ArrowDown') move(85); if (event.key === 'ArrowUp') move(-85); };
     window.addEventListener('wheel', wheel, { passive: true }); window.addEventListener('keydown', key);
     return () => { window.removeEventListener('wheel', wheel); window.removeEventListener('keydown', key); clearTimeout(stopTimer.current); };
-  }, [move]);
+  }, [move, section.id]);
 
   const reached = Math.floor(walk * discoveries.length + .05) % discoveries.length;
   useEffect(() => {
@@ -152,6 +154,10 @@ function SectionOverlay({ section, initialProjectSlug, onBack, formState, onSubm
     const card = discoveryRef.current?.children?.[reached];
     card?.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'nearest', inline: 'center' });
   }, [reached, reducedMotion, section.id]);
+  if (section.id === 'projects') {
+    if (active !== null) return <section className="planet-surface section-projects project-detail-open" style={{ '--planet': section.color, '--accent': section.accent }}><ProjectDetail project={discoveries[active]} color={section.color} accent={section.accent} onClose={closeDiscovery} /></section>;
+    return <ProjectsCockpit projects={discoveries} activeIndex={cockpitIndex} onSetIndex={setCockpitIndex} onPrevious={() => setCockpitIndex((value) => (value - 1 + discoveries.length) % discoveries.length)} onNext={() => setCockpitIndex((value) => (value + 1) % discoveries.length)} onSelect={() => openDiscovery(cockpitIndex)} onBack={onBack} color={section.color} accent={section.accent} />;
+  }
   return <section className={`planet-surface section-${section.id} ${hasMoved ? 'has-explored' : ''} ${active !== null && section.id === 'projects' ? 'project-detail-open' : ''}`} style={{ '--planet': section.color, '--accent': section.accent }} onTouchStart={(event) => { surfaceTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => { if (active !== null) return; const delta = (surfaceTouchStart.current || 0) - event.changedTouches[0].clientY; if (Math.abs(delta) > 12) move(delta * 3.2); }}>
     <PlanetExplorer color={section.color} accent={section.accent} progress={walk} moving={moving} reducedMotion={reducedMotion} sectionId={section.id} items={section.cards} />
     <header className="surface-hud"><button onClick={onBack}>← Launch to space</button><div><small>PLANETARY EXPEDITION // {section.name}</small><strong>{section.section}</strong></div><span>{Math.round(walk * 100)}M TRAVELED</span></header>
@@ -168,11 +174,30 @@ function SectionOverlay({ section, initialProjectSlug, onBack, formState, onSubm
   </section>;
 }
 
-function ProjectDetail({ project, onClose }) {
+function ProjectsCockpit({ projects, activeIndex, onSetIndex, onPrevious, onNext, onSelect, onBack, color, accent }) {
+  const project = projects[activeIndex];
+  return <section className="projects-cockpit" style={{ '--planet': color, '--accent': accent }}>
+    <div className="cockpit-stars" />
+    <header className="cockpit-header"><button onClick={onBack}>← Return to orbit</button><div><small>CREATION PLANET</small><strong>PROJECT CONTROL ROOM</strong></div><span>{String(activeIndex + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')}</span></header>
+    <div className="cockpit-shell">
+      <div className="cockpit-window-frame"><div className="cockpit-window" key={project.slug}><i className="cockpit-planet" /><div className="cockpit-project-visual"><span>{project.meta}</span><strong>{project.title}</strong><p>{project.text}</p><button onClick={onSelect}>Open project mission <b>↗</b></button></div><div className="window-coordinates">LAT 41.40338&nbsp;&nbsp; LNG 02.17403</div></div></div>
+      <div className="cockpit-console">
+        <div className="console-readout"><small>ACTIVE ARCHIVE</small><strong>{project.title}</strong><span>PROJECT SIGNAL LOCKED</span></div>
+        <button className="cockpit-arrow" onClick={onPrevious} aria-label="Previous project">←</button>
+        <div className="cockpit-selector">{projects.map((item, index) => <button key={item.slug} className={index === activeIndex ? 'active' : ''} onClick={() => onSetIndex(index)} aria-label={`Show ${item.title}`}><i /><span>{String(index + 1).padStart(2, '0')}</span></button>)}</div>
+        <button className="cockpit-arrow" onClick={onNext} aria-label="Next project">→</button>
+        <div className="console-status"><i /> SYSTEM READY<br /><span>Use arrows to browse</span></div>
+      </div>
+    </div>
+  </section>;
+}
+
+function ProjectDetail({ project, color, accent, onClose }) {
   return <article className="project-detail" aria-label={`${project.title} project details`}>
     <header><button onClick={onClose}>← Back to Projects Planet</button><small>PROJECT MISSION RECORD</small><span>{project.meta}</span></header>
+    <section className="project-landing-hero"><PlanetExplorer color={color} accent={accent} progress={0} moving={false} reducedMotion sectionId="project-detail" /><div className="landing-caption"><small>CREW DISEMBARKED // SITE SECURE</small><h1>{project.title}</h1><p>Scroll to explore the complete project mission.</p><span>↓</span></div></section>
     <div className="project-detail-body">
-      <section className="project-detail-hero"><small>SELECTED PROJECT</small><h1>{project.title}</h1><p>{project.text}</p><div className="hologram-tags">{project.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></section>
+      <section className="project-detail-hero"><small>MISSION OVERVIEW</small><h1>{project.title}</h1><p>{project.text}</p><div className="hologram-tags">{project.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></section>
       <div className="project-detail-grid">
         <section><small>01 / CHALLENGE</small><h2>What needed to be solved</h2><p>{project.challenge}</p></section>
         <section><small>02 / SOLUTION</small><h2>How it was approached</h2><p>{project.solution}</p></section>
