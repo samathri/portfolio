@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import SpaceScene from './SpaceScene.jsx';
-import PlanetRoom from './PlanetRoom.jsx';
+import StoryScene from './StoryScene.jsx';
 import { destinationById, destinations, profile } from './content.js';
 import './styles.css';
 
@@ -112,197 +112,321 @@ function MissionMap({ open, selected, onSelect, onClose }) { return <aside class
 function Settings({ open, quality, setQuality, fallback, setFallback, onClose }) { return <aside className={`settings-panel ${open ? 'open' : ''}`} aria-hidden={!open}><button className="panel-close" onClick={onClose} aria-label="Close settings">×</button><small>SYSTEM SETTINGS</small><h2>Experience</h2><label>Graphics quality<select value={quality} onChange={(e) => setQuality(e.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label className="switch-row">Use accessible 2D mode<input type="checkbox" checked={fallback} onChange={(e) => setFallback(e.target.checked)} /></label><p>Motion preferences from your device are respected automatically.</p></aside>; }
 
 /* ------------------------------------------------------------------ *
- *  Sub-page experience: explorable 3D planet room
+ *  Sub-page experience: cinematic scroll story
  * ------------------------------------------------------------------ */
 
 const shortCompany = (title) => (title.includes('—') ? title.split('—')[1].trim() : title);
 
-const truncate = (value, max = 58) => (value.length > max ? `${value.slice(0, max).trim()}…` : value);
+const SKILL_GROUP_META = {
+  'Front-end': { name: 'Front-end', icon: '🎨', blurb: 'Interfaces people enjoy using — responsive, accessible, and quick.' },
+  'Back-end and mobile': { name: 'Back-end & Mobile', icon: '🛠️', blurb: 'The engine room — servers, databases, APIs, and mobile apps.' },
+  'Platforms and operations': { name: 'Platforms & Tools', icon: '🚀', blurb: 'CMS platforms, SEO tooling, and automation that keep things running.' },
+};
 
-// `sub` is a short at-a-glance preview shown in the Signal Index so the
-// content is legible without opening every panel.
-function buildHotspots(section) {
+const CHANNEL_ICON = { Email: '📧', Phone: '📞', Location: '📍' };
+
+// Turn a section's real content into a sequence of full-screen story panels.
+function buildPanels(section, ctx) {
+  const hero = {
+    key: 'hero', variant: 'is-hero', dot: 'Intro',
+    content: (
+      <>
+        <span className="story-eyebrow">{section.eyebrow}</span>
+        <h1 className="story-title">{section.id === 'about' ? `Hi, I'm ${profile.name}` : section.friendlyTitle}</h1>
+        <p className="story-lead">{section.id === 'about' ? profile.role : section.heading}</p>
+        <p className="story-sub">{section.tagline}</p>
+        <span className="scroll-cue">Use the console to fly through <b>►</b></span>
+      </>
+    ),
+  };
+
   switch (section.id) {
-    case 'about':
-      return [
-        { kind: 'dossier', short: 'Dossier', title: profile.name, role: profile.role, label: 'CREW DOSSIER', sub: profile.role, text: section.body, stats: section.stats },
-        ...section.facts.map((fact, index) => ({ kind: 'text', short: fact.title, title: fact.title, label: `ORIGIN RECORD 0${index + 1}`, sub: truncate(fact.text), text: fact.text })),
-      ];
-    case 'skills':
-      return Object.entries(section.groups).map(([name, list]) => ({ kind: 'skills', short: name, title: name, label: 'SKILL CLUSTER', sub: `${list.slice(0, 3).join(' · ')} +${list.length - 3}`, text: `${list.length} core capabilities in this cluster.`, tags: list }));
-    case 'projects':
-      return section.cards.map((card) => ({ kind: 'project', short: card.title, title: card.title, label: card.meta, sub: card.meta, text: card.text, ...card }));
-    case 'services':
-      return section.cards.map((card) => ({ kind: 'service', short: card.title, title: card.title, label: card.meta, sub: card.meta, text: card.text }));
-    case 'experience':
-      return section.timeline.map((entry) => ({ kind: 'timeline', short: shortCompany(entry.title), title: entry.title, label: entry.date, sub: entry.date, text: entry.text }));
-    case 'contact':
-      return [
-        ...section.channels.map((channel) => ({ kind: 'channel', short: channel.title, title: channel.title, label: channel.meta, sub: channel.text, text: channel.text, href: channel.href })),
-        { kind: 'contact', short: 'Transmit', title: 'Open a channel', label: 'TRANSMISSION UPLINK', sub: 'Send me a message', text: section.body },
-      ];
+    case 'about': {
+      const story = { key: 'story', dot: 'My story', content: (
+        <><span className="panel-kicker">My story</span><p className="panel-big">{section.body}</p></>
+      ) };
+      const strengths = { key: 'strengths', variant: 'is-wide', dot: 'Strengths', content: (
+        <>
+          <span className="panel-kicker">What I&rsquo;m great at</span>
+          <div className="strength-grid">
+            {section.facts.map((fact, i) => (
+              <div className="strength-card" key={fact.title}>
+                <h3>{fact.title}</h3>
+                <p>{fact.text}</p>
+                {section.stats[i] && <div className="bar"><span style={{ width: `${section.stats[i].value}%` }} /></div>}
+              </div>
+            ))}
+          </div>
+        </>
+      ) };
+      const cta = { key: 'cta', variant: 'is-cta', dot: 'Next', content: (
+        <>
+          <span className="panel-kicker">Like what you see?</span>
+          <h2 className="panel-big">Let&rsquo;s build something together.</h2>
+          <div className="cta-row">
+            <button className="btn primary" onClick={() => ctx.onWarp('projects')}>See my work →</button>
+            <button className="btn" onClick={() => ctx.onWarp('contact')}>Get in touch</button>
+          </div>
+        </>
+      ) };
+      return [hero, story, strengths, cta];
+    }
+    case 'skills': {
+      const total = Object.keys(section.groups).length;
+      const groups = Object.entries(section.groups).map(([name, list], i) => {
+        const meta = SKILL_GROUP_META[name] || { name, icon: '✨', blurb: '' };
+        return { key: `g${i}`, dot: meta.name, content: (
+          <>
+            <span className="panel-icon" aria-hidden="true">{meta.icon}</span>
+            <span className="panel-kicker">Skill set {i + 1} of {total}</span>
+            <h2 className="panel-big">{meta.name}</h2>
+            <p className="panel-text">{meta.blurb}</p>
+            <div className="chips">{list.map((skill) => <span key={skill}>{skill}</span>)}</div>
+          </>
+        ) };
+      });
+      return [hero, ...groups];
+    }
+    case 'projects': {
+      const projects = section.cards.map((card, i) => ({ key: card.slug, variant: 'is-project', dot: card.title, content: (
+        <div className="project-showcase">
+          <div className="project-copy">
+            <span className="panel-kicker">Project {String(i + 1).padStart(2, '0')} / {String(section.cards.length).padStart(2, '0')}</span>
+            <h2 className="panel-big">{card.title}</h2>
+            <p className="project-meta">{card.meta}</p>
+            <p className="panel-text">{card.text}</p>
+            <div className="chips small">{card.tags.slice(0, 6).map((tag) => <span key={tag}>{tag}</span>)}</div>
+            <button className="btn primary" onClick={() => ctx.showProject(card)}>See full details →</button>
+          </div>
+          <div className="project-frame" aria-hidden="true">
+            <div className="frame-bar"><i /><i /><i /></div>
+            <div className="frame-screen"><span>{card.title}</span><b>{card.meta}</b></div>
+          </div>
+        </div>
+      ) }));
+      return [hero, ...projects];
+    }
+    case 'services': {
+      const services = section.cards.map((card, i) => ({ key: `s${i}`, dot: card.title, content: (
+        <>
+          <span className="panel-icon" aria-hidden="true">{card.icon}</span>
+          <span className="panel-kicker">{card.meta}</span>
+          <h2 className="panel-big">{card.title}</h2>
+          <p className="panel-text">{card.text}</p>
+        </>
+      ) }));
+      const cta = { key: 'cta', variant: 'is-cta', dot: 'Start', content: (
+        <>
+          <span className="panel-kicker">Have a project in mind?</span>
+          <h2 className="panel-big">Let&rsquo;s scope it together.</h2>
+          <div className="cta-row"><button className="btn primary" onClick={() => ctx.onWarp('contact')}>Start a conversation →</button></div>
+        </>
+      ) };
+      return [hero, ...services, cta];
+    }
+    case 'experience': {
+      const steps = section.timeline.map((entry, i) => ({ key: `e${i}`, dot: shortCompany(entry.title), content: (
+        <>
+          <span className="panel-kicker">Step {i + 1} of {section.timeline.length} <em>· {entry.date}</em></span>
+          <h2 className="panel-big">{entry.title}</h2>
+          <p className="panel-text">{entry.text}</p>
+        </>
+      ) }));
+      return [hero, ...steps];
+    }
+    case 'contact': {
+      const reach = { key: 'reach', variant: 'is-wide', dot: 'Reach me', content: (
+        <>
+          <span className="panel-kicker">Reach me directly</span>
+          <div className="channel-grid">
+            {section.channels.map((channel) => {
+              const inner = (<><span className="channel-icon" aria-hidden="true">{CHANNEL_ICON[channel.title] || '🛰️'}</span><b>{channel.title}</b><span className="channel-value">{channel.text}</span></>);
+              return channel.href
+                ? <a className="channel" key={channel.title} href={channel.href}>{inner}</a>
+                : <div className="channel" key={channel.title}>{inner}</div>;
+            })}
+          </div>
+        </>
+      ) };
+      const form = { key: 'form', variant: 'is-form', dot: 'Message', content: (
+        <>
+          <span className="panel-kicker">Send a message</span>
+          <h2 className="panel-big">Tell me about your idea.</h2>
+          <ContactForm state={ctx.formState} onSubmit={ctx.onSubmit} />
+        </>
+      ) };
+      return [hero, reach, form];
+    }
     default:
-      return [];
+      return [hero];
   }
 }
 
 function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, reducedMotion, formState, onSubmit }) {
-  const hotspots = useMemo(() => buildHotspots(section), [section]);
-  const [active, setActive] = useState(() => {
-    if (section.id !== 'projects' || !initialProjectSlug) return null;
-    const index = hotspots.findIndex((item) => item.slug === initialProjectSlug);
-    return index >= 0 ? index : null;
-  });
-  const [hintDim, setHintDim] = useState(false);
-  const [hovered, setHovered] = useState(null);
+  const progressRef = useRef(0);
+  const lockRef = useRef(false);
+  const touchRef = useRef(null);
+  const [openProject, setOpenProject] = useState(() =>
+    (section.id === 'projects' && initialProjectSlug ? section.cards.find((card) => card.slug === initialProjectSlug) || null : null));
 
-  const open = useCallback((index) => {
-    setActive(index); setHintDim(true);
-    if (section.id === 'projects') history.pushState({}, '', `/projects/${hotspots[index].slug}`);
-  }, [section.id, hotspots]);
-  const close = useCallback(() => {
-    setActive(null);
-    if (section.id === 'projects') history.pushState({}, '', '/projects');
-  }, [section.id]);
+  const showProject = useCallback((project) => { setOpenProject(project); history.pushState({}, '', `/projects/${project.slug}`); }, []);
+  const closeProject = useCallback(() => { setOpenProject(null); history.pushState({}, '', '/projects'); }, []);
 
+  const panels = buildPanels(section, { showProject, onWarp, formState, onSubmit });
+  const last = panels.length - 1;
+
+  const [block, setBlock] = useState(0);
+  const [dir, setDir] = useState('next');
+  const [sys, setSys] = useState({ cam: true, grid: true, map: false, log: true });
+  const flip = (kkey) => setSys((state) => ({ ...state, [kkey]: !state[kkey] }));
+
+  const go = useCallback((target) => {
+    setBlock((current) => {
+      const clamped = clamp(target, 0, last);
+      if (clamped !== current) setDir(clamped > current ? 'next' : 'prev');
+      progressRef.current = last > 0 ? clamped / last : 0;
+      return clamped;
+    });
+  }, [last]);
+
+  // Pilot the console with the wheel, arrow keys, and space — one block per gesture.
   useEffect(() => {
-    const onKey = (event) => { if (event.key === 'Escape') { if (active !== null) close(); else onBack(); } };
+    const step = (delta) => {
+      if (lockRef.current) return;
+      lockRef.current = true;
+      setTimeout(() => { lockRef.current = false; }, 520);
+      setBlock((current) => {
+        const clamped = clamp(current + delta, 0, last);
+        if (clamped !== current) { setDir(delta > 0 ? 'next' : 'prev'); progressRef.current = last > 0 ? clamped / last : 0; }
+        return clamped;
+      });
+    };
+    const onWheel = (event) => { if (openProject || Math.abs(event.deltaY) < 12) return; step(event.deltaY > 0 ? 1 : -1); };
+    const onKey = (event) => {
+      if (event.key === 'Escape') { if (openProject) closeProject(); else onBack(); return; }
+      if (openProject) return;
+      if (['ArrowDown', 'ArrowRight', 'PageDown', ' '].includes(event.key)) { event.preventDefault(); step(1); }
+      if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); step(-1); }
+    };
+    window.addEventListener('wheel', onWheel, { passive: true });
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [active, close, onBack]);
+    return () => { window.removeEventListener('wheel', onWheel); window.removeEventListener('keydown', onKey); };
+  }, [openProject, last, closeProject, onBack]);
 
-  const activeItem = active !== null ? hotspots[active] : null;
-  const showProjectDetail = section.id === 'projects' && activeItem;
-  const focusedIndex = activeItem && !showProjectDetail ? active : null;
+  const panel = panels[Math.min(block, last)];
+  const throttle = last > 0 ? Math.round((block / last) * 100) : 0;
+
+  // Touch: swipe left/right to move between blocks (buttons still work too).
+  const onTouchStart = (event) => { const point = event.touches[0]; touchRef.current = { x: point.clientX, y: point.clientY }; };
+  const onTouchEnd = (event) => {
+    if (openProject || !touchRef.current) return;
+    const point = event.changedTouches[0];
+    const dx = point.clientX - touchRef.current.x;
+    const dy = point.clientY - touchRef.current.y;
+    touchRef.current = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) go(dx < 0 ? block + 1 : block - 1);
+  };
 
   return (
-    <section className={`planet-room section-${section.id}`} style={{ '--planet': section.color, '--accent': section.accent }}>
-      <PlanetRoom section={section} hotspots={hotspots} quality={quality} reducedMotion={reducedMotion} focusedIndex={focusedIndex} highlightIndex={hovered} onHotspotHover={setHovered} onHotspotClick={open} />
-      <div className="room-vignette" />
+    <section className={`cockpit section-${section.id}`} style={{ '--planet': section.color, '--accent': section.accent }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <StoryScene section={section} quality={quality} reducedMotion={reducedMotion} scrollRef={progressRef} />
+      <div className="cockpit-glass" />
 
-      <header className="room-hud">
-        <button className="room-back" onClick={onBack}><b>◄</b> Return to galaxy</button>
-        <div className="room-title"><small>PLANETARY SYSTEM // {section.name}</small><strong>{section.section}</strong></div>
-        <span className="room-count">{hotspots.length} SIGNALS</span>
-      </header>
+      <div className="cockpit-frame">
+        <span className="strut strut-l" aria-hidden="true" />
+        <span className="strut strut-r" aria-hidden="true" />
 
-      <aside className={`room-brief ${hintDim ? 'is-dim' : ''}`}>
-        <small>MISSION BRIEF</small>
-        <h2>{section.heading}</h2>
-        <p>{section.tagline}</p>
-        <div className="room-controls"><i /> Drag to look around <em>·</em> Click a glowing marker</div>
-      </aside>
-
-      {!activeItem && (
-        <nav className="room-index" aria-label={`${section.section} signals`}>
-          <small>SIGNAL INDEX <em>— hover to locate · click to open</em></small>
-          {hotspots.map((item, index) => (
-            <button
-              key={index}
-              className={hovered === index ? 'is-hot' : ''}
-              onClick={() => open(index)}
-              onMouseEnter={() => setHovered(index)}
-              onMouseLeave={() => setHovered((current) => (current === index ? null : current))}
-              onFocus={() => setHovered(index)}
-              onBlur={() => setHovered((current) => (current === index ? null : current))}
-            >
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <div><b>{item.short}</b><small>{item.sub}</small></div>
-              <em>{item.kind === 'project' ? 'OPEN ↗' : 'VIEW +'}</em>
-            </button>
-          ))}
-        </nav>
-      )}
-
-      {activeItem && !showProjectDetail && (
-        <HotspotPanel
-          item={activeItem} index={active} total={hotspots.length}
-          onClose={close}
-          onPrev={() => open((active - 1 + hotspots.length) % hotspots.length)}
-          onNext={() => open((active + 1) % hotspots.length)}
-          formState={formState} onSubmit={onSubmit}
-        />
-      )}
-
-      {showProjectDetail && <ProjectDetail project={activeItem} color={section.color} accent={section.accent} onClose={close} />}
-
-      <WarpDock current={section.id} onWarp={onWarp} />
-    </section>
-  );
-}
-
-function HotspotPanel({ item, index, total, onClose, onPrev, onNext, formState, onSubmit }) {
-  return (
-    <div className="hotspot-scrim" onClick={onClose}>
-      <article className={`hotspot-panel kind-${item.kind}`} onClick={(event) => event.stopPropagation()} role="dialog" aria-label={item.title}>
-        <i className="corner tl" /><i className="corner tr" /><i className="corner bl" /><i className="corner br" />
-        <button className="hotspot-close" onClick={onClose} aria-label="Close">×</button>
-        <header>
-          <small>{item.label}</small>
-          <span className="panel-index">{String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}</span>
+        <header className="cockpit-hud">
+          <button className="hud-exit" onClick={onBack}><b>◄</b> Exit to space</button>
+          <div className="hud-title"><small>{section.name}</small><strong>{section.friendlyTitle}</strong></div>
+          <div className="hud-sys" aria-hidden="true"><i className="led on" /><i className="led on" /><i className="led warn" /><span>SYS OK</span></div>
         </header>
-        <h2>{item.title}</h2>
-        {item.role && <p className="panel-role">{item.role}</p>}
-        {item.text && <p className="panel-text">{item.text}</p>}
-        {item.stats && (
-          <div className="stat-bars">
-            {item.stats.map((stat) => (
-              <div key={stat.label}><b>{stat.label}</b><i><span style={{ width: `${stat.value}%` }} /></i><em>{stat.value}</em></div>
-            ))}
-          </div>
-        )}
-        {item.tags && <div className="panel-tags">{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
-        {item.href && <a className="panel-link" href={item.href}>Open channel <b>↗</b></a>}
-        {item.kind === 'contact' && <ContactForm state={formState} onSubmit={onSubmit} />}
-        <footer className="panel-nav">
-          <button onClick={onPrev} aria-label="Previous signal">← Prev</button>
-          <span>{item.short}</span>
-          <button onClick={onNext} aria-label="Next signal">Next →</button>
-        </footer>
-      </article>
-    </div>
-  );
-}
 
-function WarpDock({ current, onWarp }) {
-  return (
-    <nav className="warp-dock" aria-label="Warp to another planet">
-      <span className="warp-label">WARP<br />DOCK</span>
-      <div className="warp-planets">
-        {destinations.map((item) => (
-          <button
-            key={item.id}
-            className={item.id === current ? 'active' : ''}
-            style={{ '--planet': item.color, '--accent': item.accent }}
-            onClick={() => item.id !== current && onWarp(item.id)}
-            title={`${item.name} — ${item.section}`}
-            aria-current={item.id === current}
-          >
-            <i /><b>{item.section}</b>
-          </button>
-        ))}
+        <div className="viewscreen">
+          <div className={`viewscreen-frame ${sys.grid ? '' : 'no-grid'}`}>
+            <i className="vs-corner tl" /><i className="vs-corner tr" /><i className="vs-corner bl" /><i className="vs-corner br" />
+            <div className={`viewscreen-scroll ${panel.variant || ''}`} key={block} data-dir={dir}>
+              {panel.content}
+            </div>
+            <div className="vs-scanlines" aria-hidden="true" />
+          </div>
+        </div>
+
+        <div className="console">
+          <div className="console-side left">
+            <div className="led-stack" aria-hidden="true">
+              <div className="led-row"><i className="led on" /><b>PWR</b></div>
+              <div className="led-row"><i className="led on" /><b>ENG</b></div>
+              <div className="led-row"><i className="led warn" /><b>O2</b></div>
+            </div>
+            <div className="switch-row">
+              <button type="button" className={`toggle ${sys.cam ? 'on' : ''}`} onClick={() => flip('cam')} aria-pressed={sys.cam} title="Camera"><i /><b>CAM</b></button>
+              <button type="button" className={`toggle ${sys.grid ? 'on' : ''}`} onClick={() => flip('grid')} aria-pressed={sys.grid} title="Screen grid"><i /><b>GRID</b></button>
+            </div>
+          </div>
+
+          <button className="thruster prev" onClick={() => go(block - 1)} disabled={block === 0} aria-label="Previous block"><b>◄</b><span>Prev</span></button>
+
+          <div className="console-mid">
+            <div className="console-screen"><small>BLOCK {String(block + 1).padStart(2, '0')} / {String(panels.length).padStart(2, '0')}</small><strong>{panel.dot}</strong></div>
+            <div className="block-switches">
+              {panels.map((item, index) => (
+                <button key={item.key} className={index === block ? 'active' : ''} onClick={() => go(index)} title={item.dot} aria-label={item.dot} aria-current={index === block}>
+                  <i /><span>{String(index + 1).padStart(2, '0')}</span>
+                </button>
+              ))}
+            </div>
+            <div className="throttle" aria-hidden="true"><span style={{ width: `${throttle}%` }} /></div>
+          </div>
+
+          <button className="thruster next" onClick={() => go(block + 1)} disabled={block === last} aria-label="Next block"><b>►</b><span>Next</span></button>
+
+          <div className="console-side right">
+            <div className="gauge" style={{ '--v': throttle }} aria-hidden="true"><b>THR</b></div>
+            <div className="switch-row">
+              <button type="button" className={`toggle ${sys.map ? 'on' : ''}`} onClick={() => flip('map')} aria-pressed={sys.map} title="Star map"><i /><b>MAP</b></button>
+              <button type="button" className={`toggle ${sys.log ? 'on' : ''}`} onClick={() => flip('log')} aria-pressed={sys.log} title="Flight log"><i /><b>LOG</b></button>
+            </div>
+          </div>
+
+          <nav className="nav-strip" aria-label="Fly to another planet">
+            <span>Fly to</span>
+            {destinations.map((item) => (
+              <button
+                key={item.id}
+                className={item.id === section.id ? 'active' : ''}
+                style={{ '--planet': item.color, '--accent': item.accent }}
+                onClick={() => item.id !== section.id && onWarp(item.id)}
+                title={`${item.friendlyTitle} — ${item.name}`}
+                aria-current={item.id === section.id}
+              ><i /><b>{item.friendlyTitle}</b></button>
+            ))}
+          </nav>
+        </div>
       </div>
-    </nav>
+
+      {openProject && <ProjectDetail project={openProject} color={section.color} accent={section.accent} onClose={closeProject} />}
+    </section>
   );
 }
 
 function ProjectDetail({ project, color, accent, onClose }) {
   return <article className="project-detail" aria-label={`${project.title} project details`} style={{ '--planet': color, '--accent': accent }}>
-    <header><button onClick={onClose}>← Back to Projects Planet</button><small>PROJECT MISSION RECORD</small><span>{project.meta}</span></header>
+    <header><button onClick={onClose}>← Back to My Projects</button><small>PROJECT</small><span>{project.meta}</span></header>
     <section className="project-landing-hero">
       <div className="hero-stars" />
       <div className="hero-planet" />
-      <div className="landing-caption"><small>CREW DISEMBARKED // SITE SECURE</small><h1>{project.title}</h1><p>Scroll to explore the complete project mission.</p><span>↓</span></div>
+      <div className="landing-caption"><small>{project.meta}</small><h1>{project.title}</h1><p>Scroll to see the full story.</p><span>↓</span></div>
     </section>
     <div className="project-detail-body">
-      <section className="project-detail-hero"><small>MISSION OVERVIEW</small><h1>{project.title}</h1><p>{project.text}</p><div className="hologram-tags">{project.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></section>
+      <section className="project-detail-hero"><small>OVERVIEW</small><h1>{project.title}</h1><p>{project.text}</p><div className="hologram-tags">{project.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></section>
       <div className="project-detail-grid">
-        <section><small>01 / CHALLENGE</small><h2>What needed to be solved</h2><p>{project.challenge}</p></section>
-        <section><small>02 / SOLUTION</small><h2>How it was approached</h2><p>{project.solution}</p></section>
-        <section><small>03 / CONTRIBUTION</small><h2>My role</h2><p>{project.contribution}</p></section>
-        <section><small>04 / OUTCOME</small><h2>Project result</h2><p>{project.outcome}</p></section>
+        <section><small>01 / THE CHALLENGE</small><h2>What needed to be solved</h2><p>{project.challenge}</p></section>
+        <section><small>02 / THE SOLUTION</small><h2>How I approached it</h2><p>{project.solution}</p></section>
+        <section><small>03 / MY ROLE</small><h2>What I did</h2><p>{project.contribution}</p></section>
+        <section><small>04 / THE OUTCOME</small><h2>The result</h2><p>{project.outcome}</p></section>
       </div>
-      <section className="project-features"><small>SYSTEM CAPABILITIES</small><h2>Key features</h2><ul>{project.features.map((feature) => <li key={feature}>{feature}</li>)}</ul></section>
+      <section className="project-features"><small>KEY FEATURES</small><h2>What it does</h2><ul>{project.features.map((feature) => <li key={feature}>{feature}</li>)}</ul></section>
     </div>
   </article>;
 }

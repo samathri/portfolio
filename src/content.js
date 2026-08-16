@@ -9,7 +9,7 @@ export const profile = {
 
 export const destinations = [
   {
-    id: 'about', name: 'Origin Planet', section: 'About Me', color: '#ff9b63', accent: '#ffd2a8', size: 1.15,
+    id: 'about', name: 'Origin Planet', section: 'About Me', friendlyTitle: 'About Me', eyebrow: 'Nice to meet you', color: '#ff9b63', accent: '#ffd2a8', size: 1.15,
     position: [-5.8, 0.5, -5], tagline: 'The human story behind the systems.',
     heading: 'I build useful digital systems around real human needs.',
     body: 'I am a passionate and adaptable full-stack developer with experience building responsive, cross-browser web applications. My work combines UI/UX, performance, databases, API integrations, CMS platforms, SEO, accessibility, and automation. I enjoy learning new technologies and applying them to practical problems.',
@@ -30,7 +30,7 @@ export const destinations = [
     cta: 'Download résumé',
   },
   {
-    id: 'skills', name: 'Neural Planet', section: 'Skills', color: '#5f7cff', accent: '#61e7ff', size: 1.35,
+    id: 'skills', name: 'Neural Planet', section: 'Skills', friendlyTitle: 'My Skills', eyebrow: 'What I work with', color: '#5f7cff', accent: '#61e7ff', size: 1.35,
     position: [-2.2, 1.3, -12], tagline: 'Methods, models, and intelligent workflows.',
     heading: 'A practical toolkit for dependable AI behavior.',
     body: 'My work spans prompt architecture, evaluation, retrieval, automation, and multimodal interaction. Every technique is selected for the product problem—not for novelty.',
@@ -42,7 +42,7 @@ export const destinations = [
     },
   },
   {
-    id: 'projects', name: 'Creation Planet', section: 'Projects', color: '#b56cff', accent: '#ff78d1', size: 1.55,
+    id: 'projects', name: 'Creation Planet', section: 'Projects', friendlyTitle: 'My Projects', eyebrow: "Things I've built", color: '#b56cff', accent: '#ff78d1', size: 1.55,
     position: [3.5, -0.2, -20], tagline: 'Selected systems, experiments, and outcomes.',
     heading: 'Web projects designed around real user needs.',
     body: 'Explore five selected development projects from my portfolio.',
@@ -56,20 +56,20 @@ export const destinations = [
     ],
   },
   {
-    id: 'services', name: 'Solutions Planet', section: 'Services', color: '#23c69b', accent: '#7dffd5', size: 1.2,
+    id: 'services', name: 'Solutions Planet', section: 'Services', friendlyTitle: 'What I Can Do', eyebrow: 'How I can help', color: '#23c69b', accent: '#7dffd5', size: 1.2,
     position: [6.5, 1.1, -29], tagline: 'Practical AI missions for teams and products.',
     heading: 'From unclear AI ambition to a working system.',
     body: 'Engagements are scoped around the business problem, measurable behavior, and a maintainable handoff.',
     layout: 'pylons',
     cards: [
-      { title: 'Prompt Systems', meta: 'Design + optimization', text: 'Reusable architectures, prompt audits, output contracts, and systematic testing.' },
-      { title: 'AI Assistants', meta: 'Conversation + knowledge', text: 'Purpose-built assistants with retrieval, tool use, safety boundaries, and human escalation.' },
-      { title: 'Workflow Automation', meta: 'Connected operations', text: 'Reliable AI workflows connecting models, business rules, data, and review stages.' },
+      { icon: '🧩', title: 'Prompt Systems', meta: 'Design + optimization', text: 'Reusable architectures, prompt audits, output contracts, and systematic testing.' },
+      { icon: '🤖', title: 'AI Assistants', meta: 'Conversation + knowledge', text: 'Purpose-built assistants with retrieval, tool use, safety boundaries, and human escalation.' },
+      { icon: '⚙️', title: 'Workflow Automation', meta: 'Connected operations', text: 'Reliable AI workflows connecting models, business rules, data, and review stages.' },
     ],
     cta: 'Start a mission',
   },
   {
-    id: 'experience', name: 'Timeline Moon', section: 'Experience', color: '#b8c5d8', accent: '#ffffff', size: 0.9,
+    id: 'experience', name: 'Timeline Moon', section: 'Experience', friendlyTitle: 'My Journey', eyebrow: "Where I've worked", color: '#b8c5d8', accent: '#ffffff', size: 0.9,
     position: [2.3, -1, -37], tagline: 'Mission records and milestones.',
     heading: 'Experience logged as missions, not job descriptions.',
     body: 'Use these beacons to describe the teams, tools, responsibilities, and measurable results behind your professional journey.',
@@ -83,7 +83,7 @@ export const destinations = [
     ],
   },
   {
-    id: 'contact', name: 'Signal Station', section: 'Contact Me', color: '#ffcf4b', accent: '#fff0a3', size: 1.05,
+    id: 'contact', name: 'Signal Station', section: 'Contact Me', friendlyTitle: "Let's Talk", eyebrow: 'Say hello', color: '#ffcf4b', accent: '#fff0a3', size: 1.05,
     position: [-3.3, 0.4, -45], tagline: 'Open a channel for your next AI mission.',
     heading: 'Ready to build something intelligent?',
     body: 'Tell me what you are trying to achieve, where the current workflow breaks, and what a successful outcome looks like.',
