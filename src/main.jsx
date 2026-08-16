@@ -117,25 +117,29 @@ function Settings({ open, quality, setQuality, fallback, setFallback, onClose })
 
 const shortCompany = (title) => (title.includes('—') ? title.split('—')[1].trim() : title);
 
+const truncate = (value, max = 58) => (value.length > max ? `${value.slice(0, max).trim()}…` : value);
+
+// `sub` is a short at-a-glance preview shown in the Signal Index so the
+// content is legible without opening every panel.
 function buildHotspots(section) {
   switch (section.id) {
     case 'about':
       return [
-        { kind: 'dossier', short: 'Dossier', title: profile.name, role: profile.role, label: 'CREW DOSSIER', text: section.body, stats: section.stats },
-        ...section.facts.map((fact, index) => ({ kind: 'text', short: fact.title, title: fact.title, label: `ORIGIN RECORD 0${index + 1}`, text: fact.text })),
+        { kind: 'dossier', short: 'Dossier', title: profile.name, role: profile.role, label: 'CREW DOSSIER', sub: profile.role, text: section.body, stats: section.stats },
+        ...section.facts.map((fact, index) => ({ kind: 'text', short: fact.title, title: fact.title, label: `ORIGIN RECORD 0${index + 1}`, sub: truncate(fact.text), text: fact.text })),
       ];
     case 'skills':
-      return Object.entries(section.groups).map(([name, list]) => ({ kind: 'skills', short: name, title: name, label: 'SKILL CLUSTER', text: `${list.length} core capabilities in this cluster.`, tags: list }));
+      return Object.entries(section.groups).map(([name, list]) => ({ kind: 'skills', short: name, title: name, label: 'SKILL CLUSTER', sub: `${list.slice(0, 3).join(' · ')} +${list.length - 3}`, text: `${list.length} core capabilities in this cluster.`, tags: list }));
     case 'projects':
-      return section.cards.map((card) => ({ kind: 'project', short: card.title, title: card.title, label: card.meta, text: card.text, ...card }));
+      return section.cards.map((card) => ({ kind: 'project', short: card.title, title: card.title, label: card.meta, sub: card.meta, text: card.text, ...card }));
     case 'services':
-      return section.cards.map((card) => ({ kind: 'service', short: card.title, title: card.title, label: card.meta, text: card.text }));
+      return section.cards.map((card) => ({ kind: 'service', short: card.title, title: card.title, label: card.meta, sub: card.meta, text: card.text }));
     case 'experience':
-      return section.timeline.map((entry) => ({ kind: 'timeline', short: shortCompany(entry.title), title: entry.title, label: entry.date, text: entry.text }));
+      return section.timeline.map((entry) => ({ kind: 'timeline', short: shortCompany(entry.title), title: entry.title, label: entry.date, sub: entry.date, text: entry.text }));
     case 'contact':
       return [
-        ...section.channels.map((channel) => ({ kind: 'channel', short: channel.title, title: channel.title, label: channel.meta, text: channel.text, href: channel.href })),
-        { kind: 'contact', short: 'Transmit', title: 'Open a channel', label: 'TRANSMISSION UPLINK', text: section.body },
+        ...section.channels.map((channel) => ({ kind: 'channel', short: channel.title, title: channel.title, label: channel.meta, sub: channel.text, text: channel.text, href: channel.href })),
+        { kind: 'contact', short: 'Transmit', title: 'Open a channel', label: 'TRANSMISSION UPLINK', sub: 'Send me a message', text: section.body },
       ];
     default:
       return [];
@@ -150,6 +154,7 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
     return index >= 0 ? index : null;
   });
   const [hintDim, setHintDim] = useState(false);
+  const [hovered, setHovered] = useState(null);
 
   const open = useCallback((index) => {
     setActive(index); setHintDim(true);
@@ -172,7 +177,7 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
 
   return (
     <section className={`planet-room section-${section.id}`} style={{ '--planet': section.color, '--accent': section.accent }}>
-      <PlanetRoom section={section} hotspots={hotspots} quality={quality} reducedMotion={reducedMotion} focusedIndex={focusedIndex} onHotspotClick={open} />
+      <PlanetRoom section={section} hotspots={hotspots} quality={quality} reducedMotion={reducedMotion} focusedIndex={focusedIndex} highlightIndex={hovered} onHotspotHover={setHovered} onHotspotClick={open} />
       <div className="room-vignette" />
 
       <header className="room-hud">
@@ -190,12 +195,20 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
 
       {!activeItem && (
         <nav className="room-index" aria-label={`${section.section} signals`}>
-          <small>SIGNAL INDEX</small>
+          <small>SIGNAL INDEX <em>— hover to locate · click to open</em></small>
           {hotspots.map((item, index) => (
-            <button key={index} onClick={() => open(index)}>
+            <button
+              key={index}
+              className={hovered === index ? 'is-hot' : ''}
+              onClick={() => open(index)}
+              onMouseEnter={() => setHovered(index)}
+              onMouseLeave={() => setHovered((current) => (current === index ? null : current))}
+              onFocus={() => setHovered(index)}
+              onBlur={() => setHovered((current) => (current === index ? null : current))}
+            >
               <span>{String(index + 1).padStart(2, '0')}</span>
-              <b>{item.short}</b>
-              <em>{item.kind === 'project' ? 'OPEN ↗' : '+'}</em>
+              <div><b>{item.short}</b><small>{item.sub}</small></div>
+              <em>{item.kind === 'project' ? 'OPEN ↗' : 'VIEW +'}</em>
             </button>
           ))}
         </nav>

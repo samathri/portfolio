@@ -136,6 +136,13 @@ function makeHotspot(layout, index, accent, color, label, sharedGlow) {
   );
   group.add(ring);
 
+  // Expanding pulse ring — the "click me" beacon, visible only while active.
+  const pulse = new THREE.Mesh(
+    new THREE.RingGeometry(0.5, 0.6, 32),
+    new THREE.MeshBasicMaterial({ color: accentColor, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }),
+  );
+  group.add(pulse);
+
   // Layout-specific stand / connector.
   if (layout === 'pylons') {
     const pillar = new THREE.Mesh(
@@ -150,7 +157,7 @@ function makeHotspot(layout, index, accent, color, label, sharedGlow) {
   label3d.position.set(0, layout === 'pylons' ? 0.95 : 0.85, 0);
   group.add(label3d);
 
-  group.userData = { core, ring, halo, label: label3d, coreMat, baseOpacity: 0.55, spin: 0.4 + index * 0.05, index };
+  group.userData = { core, ring, pulse, halo, label: label3d, coreMat, spin: 0.4 + index * 0.05, index, pulseT: index * 0.2 };
   return group;
 }
 
@@ -160,14 +167,14 @@ function makeHotspot(layout, index, accent, color, label, sharedGlow) {
 
 export default function PlanetRoom({
   section, hotspots = EMPTY, quality = 'medium', reducedMotion = false,
-  focusedIndex = null, onHotspotHover, onHotspotClick, onReady,
+  focusedIndex = null, highlightIndex = null, onHotspotHover, onHotspotClick, onReady,
 }) {
   const mountRef = useRef(null);
-  const stateRef = useRef({ reducedMotion, focusedIndex });
+  const stateRef = useRef({ reducedMotion, focusedIndex, highlightIndex });
   const callbackRef = useRef({ onHotspotHover, onHotspotClick, onReady });
   const labels = useMemo(() => hotspots.map((h, i) => String(i + 1).padStart(2, '0') + ' · ' + (h.short || h.title || h.label || '')), [hotspots]);
 
-  useEffect(() => { stateRef.current = { reducedMotion, focusedIndex }; }, [reducedMotion, focusedIndex]);
+  useEffect(() => { stateRef.current = { reducedMotion, focusedIndex, highlightIndex }; }, [reducedMotion, focusedIndex, highlightIndex]);
   useEffect(() => { callbackRef.current = { onHotspotHover, onHotspotClick, onReady }; }, [onHotspotHover, onHotspotClick, onReady]);
 
   useEffect(() => {
@@ -432,25 +439,33 @@ export default function PlanetRoom({
 
       hotspotGroups.forEach((group, i) => {
         const ud = group.userData;
-        const isFocus = st.focusedIndex === i;
-        const isHover = hovered === i;
-        const active = isFocus || isHover;
+        const active = st.focusedIndex === i || hovered === i || st.highlightIndex === i;
         if (!st.reducedMotion) {
-          ud.core.rotation.y += dt * (0.6 + ud.spin);
-          ud.core.rotation.x += dt * 0.25;
-          ud.ring.rotation.z -= dt * 0.7;
-          group.position.y = ud.homeY + Math.sin(now * 0.0015 + i) * 0.12;
+          ud.core.rotation.y += dt * (0.5 + ud.spin);
+          ud.core.rotation.x += dt * 0.2;
+          ud.ring.rotation.z -= dt * 0.6;
+          // Gentle idle float — much smaller than before so markers read as
+          // stable, clickable buttons rather than bouncing debris.
+          group.position.y = ud.homeY + Math.sin(now * 0.0012 + i) * 0.045;
         }
-        // Face rings/labels toward the camera.
         ud.ring.lookAt(camera.position);
-        ud.label.material.opacity += ((active ? 1 : 0.28) - ud.label.material.opacity) * 0.12;
-        const labelScale = active ? 1.12 : 1;
-        ud.label.scale.x += (ud.label.userData.baseWidth * labelScale - ud.label.scale.x) * 0.14;
-        const targetHalo = active ? 1 : 0.5;
-        ud.halo.material.opacity += (targetHalo - ud.halo.material.opacity) * 0.12;
-        const targetScale = active ? 1.32 : 1;
-        group.scale.setScalar(group.scale.x + (targetScale - group.scale.x) * 0.14);
-        ud.coreMat.emissiveIntensity += ((active ? 2.1 : 1.15) - ud.coreMat.emissiveIntensity) * 0.12;
+        ud.pulse.lookAt(camera.position);
+        // Full label appears only for the active marker — no overlapping ghost text.
+        ud.label.material.opacity += ((active ? 1 : 0) - ud.label.material.opacity) * 0.16;
+        ud.label.scale.x += (ud.label.userData.baseWidth * (active ? 1.15 : 1) - ud.label.scale.x) * 0.16;
+        ud.halo.material.opacity += ((active ? 1 : 0.42) - ud.halo.material.opacity) * 0.12;
+        ud.ring.material.opacity += ((active ? 0.95 : 0.4) - ud.ring.material.opacity) * 0.12;
+        const targetScale = active ? 1.42 : 1;
+        group.scale.setScalar(group.scale.x + (targetScale - group.scale.x) * 0.16);
+        ud.coreMat.emissiveIntensity += ((active ? 2.5 : 1.05) - ud.coreMat.emissiveIntensity) * 0.12;
+        // Expanding ring pulse while active — a clear, alive "open me" beacon.
+        if (active && !st.reducedMotion) {
+          ud.pulseT = (ud.pulseT + dt * 1.3) % 1;
+          ud.pulse.scale.setScalar(1 + ud.pulseT * 1.7);
+          ud.pulse.material.opacity = 0.55 * (1 - ud.pulseT);
+        } else {
+          ud.pulse.material.opacity += ((active ? 0.4 : 0) - ud.pulse.material.opacity) * 0.2;
+        }
       });
 
       renderer.render(scene, camera);
