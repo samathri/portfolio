@@ -144,7 +144,7 @@ function buildPanels(section, ctx) {
   switch (section.id) {
     case 'about': {
       const story = { key: 'story', dot: 'My story', content: (
-        <><span className="panel-kicker">My story</span><p className="panel-big">{section.body}</p></>
+        <><span className="panel-kicker">My story</span><h2 className="panel-big">Full-stack developer, focused on real people.</h2><p className="panel-para">{section.body}</p></>
       ) };
       const strengths = { key: 'strengths', variant: 'is-wide', dot: 'Strengths', content: (
         <>

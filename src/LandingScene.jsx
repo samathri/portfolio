@@ -62,23 +62,27 @@ function astronaut(accent) {
   const pack = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.62, 0.28), soft); pack.position.set(0, 1.06, -0.32); g.add(pack);
   const waist = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.24, 0.16, 20), dark); waist.position.y = 0.67; g.add(waist);
 
-  const arms = new THREE.Group(); g.add(arms);
+  // Limbs hang from pivot groups at the shoulders and hips so they can swing
+  // in a run cycle when the visitor scrolls.
+  const limbs = { arms: [], legs: [] };
   [-1, 1].forEach((side) => {
-    const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), suit); shoulder.position.set(side * 0.36, 1.2, 0); g.add(shoulder);
-    const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.28, 8, 16), suit); upper.position.set(side * 0.44, 1.0, 0); upper.rotation.z = side * 0.22; g.add(upper);
-    const band = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.022, 8, 20), accentMat); band.position.set(side * 0.46, 0.9, 0); band.rotation.y = Math.PI / 2; g.add(band);
-    const fore = new THREE.Mesh(new THREE.CapsuleGeometry(0.095, 0.28, 8, 16), suit); fore.position.set(side * 0.52, 0.74, 0.05); fore.rotation.z = side * 0.12; g.add(fore);
-    const glove = new THREE.Mesh(new THREE.SphereGeometry(0.115, 16, 12), dark); glove.position.set(side * 0.55, 0.57, 0.09); g.add(glove);
+    const arm = new THREE.Group(); arm.position.set(side * 0.4, 1.22, 0);
+    const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), suit); arm.add(shoulder);
+    const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.28, 8, 16), suit); upper.position.set(side * 0.05, -0.22, 0); arm.add(upper);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.022, 8, 20), accentMat); band.position.set(side * 0.06, -0.34, 0); band.rotation.y = Math.PI / 2; arm.add(band);
+    const fore = new THREE.Mesh(new THREE.CapsuleGeometry(0.095, 0.28, 8, 16), suit); fore.position.set(side * 0.07, -0.5, 0.05); arm.add(fore);
+    const glove = new THREE.Mesh(new THREE.SphereGeometry(0.115, 16, 12), dark); glove.position.set(side * 0.08, -0.66, 0.09); arm.add(glove);
+    g.add(arm); limbs.arms.push(arm);
+
+    const leg = new THREE.Group(); leg.position.set(side * 0.15, 0.6, 0);
+    const hip = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), suit); leg.add(hip);
+    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.34, 8, 16), suit); thigh.position.set(side * 0.01, -0.26, 0); leg.add(thigh);
+    const shin = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.34, 8, 16), suit); shin.position.set(side * 0.01, -0.58, 0.02); leg.add(shin);
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.15, 0.3), dark); boot.position.set(side * 0.01, -0.78, 0.07); leg.add(boot);
+    g.add(leg); limbs.legs.push(leg);
   });
 
-  [-1, 1].forEach((side) => {
-    const hip = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), suit); hip.position.set(side * 0.15, 0.58, 0); g.add(hip);
-    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.34, 8, 16), suit); thigh.position.set(side * 0.16, 0.34, 0); g.add(thigh);
-    const shin = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.34, 8, 16), suit); shin.position.set(side * 0.16, 0.02, 0.02); g.add(shin);
-    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.15, 0.3), dark); boot.position.set(side * 0.16, -0.18, 0.07); g.add(boot);
-  });
-
-  g.userData = { helmet, torso };
+  g.userData = { helmet, torso, limbs };
   return g;
 }
 
@@ -220,7 +224,7 @@ export default function LandingScene({ color, accent, quality = 'medium', reduce
     const lookEnd = new THREE.Vector3(2.6, 7.5, -26);
     const lookNow = new THREE.Vector3().copy(lookStart);
 
-    let frame; let lastTime = performance.now(); let smooth = 0;
+    let frame; let lastTime = performance.now(); let smooth = 0; let runAmt = 0; let runDir = 1;
     const animate = (now) => {
       const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
       const d = dataRef.current;
@@ -231,10 +235,28 @@ export default function LandingScene({ color, accent, quality = 'medium', reduce
         spiral.rotation.y += dt * 0.01;
         starsA.rotation.y += dt * 0.003;
         starsB.rotation.y -= dt * 0.004;
-        // Astronaut idly looks around + breathes.
-        person.rotation.y = 0.55 + Math.sin(t * 0.3) * 0.35;
         person.userData.torso.scale.set(1, 1 + Math.sin(t * 1.2) * 0.01, 1);
       }
+
+      // Run cycle — scrolling sends the astronaut sprinting across the
+      // surface (and back up when you scroll up). Limb pivots swing, the body
+      // bounces with each stride, and they face the direction of travel.
+      const burn = d.scroll - smooth;
+      if (burn > 0.0004) runDir = 1; else if (burn < -0.0004) runDir = -1;
+      const runTarget = d.reducedMotion ? 0 : clampN(Math.abs(burn) * 26, 0, 1);
+      runAmt += (runTarget - runAmt) * 0.08;
+      const baseAX = compact ? -0.4 : -0.7;
+      person.position.x = lerp(baseAX, baseAX + 8, smooth);
+      person.position.z = -1.2 - smooth * 2.2;
+      const stride = Math.sin(now * 0.013) * runAmt;
+      const { arms, legs } = person.userData.limbs;
+      arms[0].rotation.x = stride * 1.05; arms[1].rotation.x = -stride * 1.05;
+      legs[0].rotation.x = -stride * 1.15; legs[1].rotation.x = stride * 1.15;
+      person.position.y = 0.18 + Math.abs(Math.sin(now * 0.013)) * 0.1 * runAmt;
+      const idleYaw = 0.55 + (d.reducedMotion ? 0 : Math.sin(t * 0.3) * 0.35);
+      const targetYaw = runAmt > 0.12 ? (runDir > 0 ? Math.PI / 2 : -Math.PI / 2) : idleYaw;
+      person.rotation.y += (targetYaw - person.rotation.y) * 0.14;
+      person.rotation.z = -runDir * runAmt * 0.1; // slight sprinter's lean
 
       skyPlanets.forEach((grp) => {
         const u = grp.userData;
@@ -244,9 +266,11 @@ export default function LandingScene({ color, accent, quality = 'medium', reduce
       });
       nebula.position.x = -smooth * 6;
 
-      // Scroll tilts the gaze from the ground crew up into the moving sky.
+      // The camera tracks the runner while they're the star of the shot,
+      // then tilts up into the moving sky as you scroll deeper.
+      lookStart.set(person.position.x * 0.85, 1.0, -4);
       lookNow.lerpVectors(lookStart, lookEnd, smooth);
-      camera.position.set(Math.sin(t * 0.15) * 0.12, lerp(1.6, 3.4, smooth), 6.4 - smooth * 0.8);
+      camera.position.set(person.position.x * 0.3 * (1 - smooth) + Math.sin(t * 0.15) * 0.12, lerp(1.6, 3.4, smooth), 6.4 - smooth * 0.8);
       camera.lookAt(lookNow.x + Math.sin(t * 0.1) * 0.12, lookNow.y, lookNow.z);
 
       renderer.render(scene, camera);
