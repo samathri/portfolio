@@ -417,3 +417,47 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
 .toggle b{font:700 7px 'DM Mono',monospace;letter-spacing:.1em}
 .toggle:hover{border-color:color-mix(in srgb,var(--accent) 55%,transparent);color:#cfe0e8}
 .viewscreen-frame.no-grid .vs-scanlines{display:none}
+
+/* ================================================================== *
+ *  PROJECT DETAIL — "landed on the planet" experience
+ * ================================================================== */
+.pd{position:fixed;z-index:60;inset:0;overflow:hidden;background:#02040c;animation:storyIn .4s ease both}
+.landing-scene{position:absolute;inset:0;z-index:0}
+.landing-scene canvas{display:block;width:100%;height:100%}
+.pd-atmos{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(120% 80% at 78% 22%,transparent 42%,rgba(2,4,12,.5)),linear-gradient(90deg,rgba(2,5,12,.86),rgba(2,5,12,.25) 46%,transparent 72%)}
+.pd-back{position:absolute;z-index:6;top:22px;left:22px;display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);background:rgba(6,15,26,.6);color:#eaf3f8;cursor:pointer;font:600 12px/1 Manrope,sans-serif;padding:12px 16px;border-radius:40px;backdrop-filter:blur(8px);transition:.2s}
+.pd-back:hover{background:color-mix(in srgb,var(--accent) 22%,rgba(6,15,26,.6));border-color:var(--accent)}
+.pd-back b{color:var(--accent)}
+.pd-scroll{position:absolute;inset:0;z-index:3;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth}
+.pd-hero{min-height:100dvh;display:grid;align-items:end;padding:0 6vw 12vh}
+.pd-hero-cap{max-width:760px}
+.pd-hero-cap small{font:600 12px 'DM Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+.pd-hero-cap h1{margin:14px 0 16px;font-size:clamp(46px,8.5vw,116px);line-height:.9;letter-spacing:-.05em;font-weight:800}
+.pd-hero-cap p{font-size:clamp(16px,1.8vw,22px);line-height:1.6;color:#c6d4dd;max-width:620px}
+.pd-cue{display:inline-flex;align-items:center;gap:9px;margin-top:28px;font:600 11px 'DM Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#c9d8e0}
+.pd-cue b{color:var(--accent);font-size:16px;animation:cueDown 1.4s ease-in-out infinite}
+.pd-body{position:relative;width:min(1080px,92vw);margin:0 auto;padding:4vh 0 16vh;display:grid;gap:20px}
+.pd-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.pd-tags span{padding:8px 13px;border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:40px;font:600 11px 'DM Mono',monospace;color:#d4e2e9;background:color-mix(in srgb,var(--planet) 12%,rgba(6,13,22,.6));backdrop-filter:blur(6px)}
+.pd-card{padding:34px 38px;border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:16px;background:linear-gradient(150deg,color-mix(in srgb,var(--planet) 12%,rgba(6,13,22,.82)),rgba(3,8,16,.9));backdrop-filter:blur(14px);box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.pd-card>small{font:600 10px 'DM Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.pd-card h2{margin:10px 0 14px;font-size:clamp(22px,3vw,34px);letter-spacing:-.02em}
+.pd-card p{color:#b9c7d0;line-height:1.75;font-size:clamp(15px,1.5vw,18px)}
+.pd-features ul{list-style:none;margin:16px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.pd-features li{padding:14px 16px;border:1px solid color-mix(in srgb,var(--accent) 18%,transparent);border-radius:10px;background:rgba(6,13,22,.5);color:#d5e1e6;font-size:14px}
+.pd-features li:before{content:'\25C6';margin-right:9px;color:var(--accent)}
+.pd-return{justify-self:start;margin-top:8px}
+
+/* Screen power-off transition into the landing */
+.crt-off{position:absolute;inset:0;z-index:30;background:#05070d;pointer-events:none;animation:crtOff 1.15s ease-out both}
+.crt-off:before{content:"";position:absolute;left:0;right:0;top:50%;height:4px;background:#eafcff;box-shadow:0 0 40px 6px #bfefff;transform:translateY(-50%);animation:crtLine 1.15s ease-out both}
+@keyframes crtOff{0%{opacity:1;background:#0a0f18}70%{opacity:1;background:#05070d}100%{opacity:0;background:#05070d}}
+@keyframes crtLine{0%{opacity:0;transform:translateY(-50%) scaleY(90)}10%{opacity:1;transform:translateY(-50%) scaleY(90)}32%{opacity:1;transform:translateY(-50%) scaleY(1)}48%{opacity:1;transform:translateY(-50%) scale(.02,1)}58%{opacity:0}100%{opacity:0}}
+
+@media(max-width:760px){
+  .pd-back{top:14px;left:14px;padding:10px 13px;font-size:11px}
+  .pd-hero{padding:0 20px 14vh}
+  .pd-body{width:calc(100vw - 32px);padding-top:2vh}
+  .pd-card{padding:24px 22px}
+  .pd-features ul{grid-template-columns:1fr}
+}

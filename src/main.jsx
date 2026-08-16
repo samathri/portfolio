@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client';
 import SpaceScene from './SpaceScene.jsx';
 import StoryScene from './StoryScene.jsx';
+import LandingScene from './LandingScene.jsx';
 import { destinationById, destinations, profile } from './content.js';
 import './styles.css';
 
@@ -405,30 +406,48 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
         </div>
       </div>
 
-      {openProject && <ProjectDetail project={openProject} color={section.color} accent={section.accent} onClose={closeProject} />}
+      {openProject && <ProjectDetail project={openProject} color={section.color} accent={section.accent} quality={quality} reducedMotion={reducedMotion} onClose={closeProject} />}
     </section>
   );
 }
 
-function ProjectDetail({ project, color, accent, onClose }) {
-  return <article className="project-detail" aria-label={`${project.title} project details`} style={{ '--planet': color, '--accent': accent }}>
-    <header><button onClick={onClose}>← Back to My Projects</button><small>PROJECT</small><span>{project.meta}</span></header>
-    <section className="project-landing-hero">
-      <div className="hero-stars" />
-      <div className="hero-planet" />
-      <div className="landing-caption"><small>{project.meta}</small><h1>{project.title}</h1><p>Scroll to see the full story.</p><span>↓</span></div>
-    </section>
-    <div className="project-detail-body">
-      <section className="project-detail-hero"><small>OVERVIEW</small><h1>{project.title}</h1><p>{project.text}</p><div className="hologram-tags">{project.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></section>
-      <div className="project-detail-grid">
-        <section><small>01 / THE CHALLENGE</small><h2>What needed to be solved</h2><p>{project.challenge}</p></section>
-        <section><small>02 / THE SOLUTION</small><h2>How I approached it</h2><p>{project.solution}</p></section>
-        <section><small>03 / MY ROLE</small><h2>What I did</h2><p>{project.contribution}</p></section>
-        <section><small>04 / THE OUTCOME</small><h2>The result</h2><p>{project.outcome}</p></section>
+function ProjectDetail({ project, color, accent, quality, reducedMotion, onClose }) {
+  const scrollRef = useRef(0);
+  const onScroll = (event) => {
+    const el = event.currentTarget;
+    const max = el.scrollHeight - el.clientHeight;
+    scrollRef.current = max > 0 ? el.scrollTop / max : 0;
+  };
+  return (
+    <article className="pd" style={{ '--planet': color, '--accent': accent }} aria-label={`${project.title} project details`}>
+      <LandingScene color={color} accent={accent} quality={quality} reducedMotion={reducedMotion} scrollRef={scrollRef} />
+      <div className="pd-atmos" />
+      <button className="pd-back" onClick={onClose}><b>◄</b> Back to My Projects</button>
+
+      <div className="pd-scroll" onScroll={onScroll}>
+        <section className="pd-hero">
+          <div className="pd-hero-cap">
+            <small>{project.meta}</small>
+            <h1>{project.title}</h1>
+            <p>{project.text}</p>
+            <span className="pd-cue">Scroll to explore <b>↓</b></span>
+          </div>
+        </section>
+
+        <div className="pd-body">
+          <div className="pd-tags">{project.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+          <section className="pd-card"><small>01 / The challenge</small><h2>What needed to be solved</h2><p>{project.challenge}</p></section>
+          <section className="pd-card"><small>02 / The solution</small><h2>How I approached it</h2><p>{project.solution}</p></section>
+          <section className="pd-card"><small>03 / My role</small><h2>What I did</h2><p>{project.contribution}</p></section>
+          <section className="pd-card"><small>04 / The outcome</small><h2>The result</h2><p>{project.outcome}</p></section>
+          <section className="pd-card pd-features"><small>Key features</small><h2>What it does</h2><ul>{project.features.map((feature) => <li key={feature}>{feature}</li>)}</ul></section>
+          <button className="btn primary pd-return" onClick={onClose}>◄ Back to My Projects</button>
+        </div>
       </div>
-      <section className="project-features"><small>KEY FEATURES</small><h2>What it does</h2><ul>{project.features.map((feature) => <li key={feature}>{feature}</li>)}</ul></section>
-    </div>
-  </article>;
+
+      <div className="crt-off" aria-hidden="true" />
+    </article>
+  );
 }
 
 function ContactForm({ state, onSubmit }) { if (state === 'success') return <div className="transmission-success"><span>↗</span><h3>Transmission sent successfully.</h3><p>I’ll respond when your signal reaches my station.</p></div>; return <form className="contact-form" onSubmit={onSubmit}><label>Name<input required name="name" placeholder="Your name" /></label><label>Email<input required type="email" name="email" placeholder="you@company.com" /></label><label>Project type<select name="type"><option>AI assistant</option><option>Prompt system</option><option>Workflow automation</option><option>Other mission</option></select></label><label>Mission brief<textarea required name="message" placeholder="What are you trying to build?" /></label><button disabled={state === 'loading'}>{state === 'loading' ? 'Launching transmission…' : 'Send transmission ↗'}</button></form>; }
