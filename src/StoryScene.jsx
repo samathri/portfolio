@@ -20,6 +20,51 @@ function glowTexture() {
   return texture;
 }
 
+// Procedural planet surface — continents, seas and polar haze in the planet's
+// own colours, so the ground reads as real terrain when the horizon fills the
+// windshield during the final descent.
+function planetTexture(color, accent) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024; canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const base = new THREE.Color(color);
+  const dark = base.clone().multiplyScalar(0.55);
+  const light = base.clone().lerp(new THREE.Color('#ffffff'), 0.25);
+  const tint = new THREE.Color(accent);
+  ctx.fillStyle = `#${dark.getHexString()}`;
+  ctx.fillRect(0, 0, 1024, 512);
+  // Large continents.
+  for (let i = 0; i < 46; i += 1) {
+    ctx.fillStyle = `#${(i % 3 ? base : light).getHexString()}`;
+    ctx.globalAlpha = 0.25 + Math.random() * 0.4;
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * 1024, Math.random() * 512, 40 + Math.random() * 150, 22 + Math.random() * 70, Math.random() * Math.PI, 0, TAU);
+    ctx.fill();
+  }
+  // Fine terrain speckle.
+  for (let i = 0; i < 900; i += 1) {
+    ctx.fillStyle = Math.random() > 0.5 ? `#${light.getHexString()}` : `#${dark.getHexString()}`;
+    ctx.globalAlpha = 0.12 + Math.random() * 0.2;
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * 1024, Math.random() * 512, 2 + Math.random() * 12, 1 + Math.random() * 7, Math.random() * Math.PI, 0, TAU);
+    ctx.fill();
+  }
+  // Accent-tinted weather bands.
+  for (let i = 0; i < 5; i += 1) {
+    ctx.fillStyle = `#${tint.getHexString()}`;
+    ctx.globalAlpha = 0.05 + Math.random() * 0.07;
+    ctx.fillRect(0, Math.random() * 512, 1024, 14 + Math.random() * 42);
+  }
+  // Polar caps.
+  ctx.globalAlpha = 0.5; ctx.fillStyle = '#e8f2f8';
+  ctx.fillRect(0, 0, 1024, 26); ctx.fillRect(0, 486, 1024, 26);
+  ctx.globalAlpha = 1;
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  return texture;
+}
+
 /**
  * The view out of the cockpit windshield: the ship drifts through space, the
  * section's own planet hangs ahead, the other planets float past, and the
@@ -116,27 +161,35 @@ export default function StoryScene({ section, quality = 'medium', reducedMotion 
     });
     scene.add(nebula);
 
-    /* ---- the section's own planet, hanging ahead ---- */
+    /* ---- the destination planet, built at true landing scale ----
+       One giant sphere. Far away it reads as a small lit disc; on final
+       approach its top limb becomes a curved horizon under the ship — the
+       same progression you'd see on a real orbital descent. */
+    const R = 46;
     const hero = new THREE.Group();
-    const heroHomeX = 6;
-    hero.position.set(heroHomeX, 1.4, -10);
+    const surfaceMap = planetTexture(color, accent);
+    disposables.push(surfaceMap);
     const heroSurface = new THREE.Mesh(
-      new THREE.SphereGeometry(size * 2.2, quality === 'low' ? 32 : 64, quality === 'low' ? 24 : 48),
-      new THREE.MeshStandardMaterial({ color: planetColor, roughness: 0.78, metalness: 0.12, emissive: planetColor, emissiveIntensity: 0.14 }),
+      new THREE.SphereGeometry(R, quality === 'low' ? 48 : 96, quality === 'low' ? 32 : 64),
+      new THREE.MeshStandardMaterial({ map: surfaceMap, color: '#cfd6dd', roughness: 0.9, metalness: 0.04, emissive: planetColor, emissiveIntensity: 0.08, fog: false }),
     );
     hero.add(heroSurface);
-    hero.add(new THREE.Mesh(
-      new THREE.SphereGeometry(size * 2.4, 40, 28),
-      new THREE.MeshBasicMaterial({ color: accentColor, transparent: true, opacity: 0.16, side: THREE.BackSide }),
-    ));
-    const heroGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: accentColor, transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending }));
-    heroGlow.scale.setScalar(size * 11); hero.add(heroGlow);
-    const heroRing = new THREE.Mesh(
-      new THREE.RingGeometry(size * 3.1, size * 4.2, 96),
-      new THREE.MeshBasicMaterial({ color: accentColor, transparent: true, opacity: 0.26, side: THREE.DoubleSide, depthWrite: false }),
-    );
+    // Atmosphere shell — thickens as you descend into it.
+    const atmoMat = new THREE.MeshBasicMaterial({ color: accentColor, transparent: true, opacity: 0.1, side: THREE.BackSide, depthWrite: false, fog: false });
+    hero.add(new THREE.Mesh(new THREE.SphereGeometry(R * 1.035, 64, 44), atmoMat));
+    // Limb glow (the bright rim you see against space).
+    const limbMat = new THREE.SpriteMaterial({ map: glow, color: accentColor, transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
+    const heroGlow = new THREE.Sprite(limbMat);
+    heroGlow.scale.setScalar(R * 2.55); hero.add(heroGlow);
+    // Ring system — visible from space, fades once you drop beneath it.
+    const ringMat = new THREE.MeshBasicMaterial({ color: accentColor, transparent: true, opacity: 0.24, side: THREE.DoubleSide, depthWrite: false, fog: false });
+    const heroRing = new THREE.Mesh(new THREE.RingGeometry(R * 1.5, R * 2.05, 128), ringMat);
     heroRing.rotation.x = Math.PI / 2.15; heroRing.rotation.y = 0.3; hero.add(heroRing);
     scene.add(hero);
+
+    // Flight path: distant disc up-ahead → looming sphere → horizon below.
+    const farPos = new THREE.Vector3(9, 5, -420);
+    const nearPos = new THREE.Vector3(0, -(R + 2.8), -26);
 
     let compact = false;
     const resize = () => {
@@ -146,45 +199,54 @@ export default function StoryScene({ section, quality = 'medium', reducedMotion 
       camera.fov = compact ? 72 : 60;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h, false);
-      hero.position.x = compact ? 3.4 : heroHomeX;
+      farPos.x = compact ? 5 : 9;
     };
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
 
-    let frame; let lastTime = performance.now(); let smooth = 0; let heroZ = -140;
+    let frame; let lastTime = performance.now(); let smooth = 0;
     const animate = (now) => {
       const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
       const d = dataRef.current;
-      smooth += (d.scroll - smooth) * 0.06;
+      smooth += (d.scroll - smooth) * 0.05;
       const t = now * 0.001;
-
-      // Block progress = how close we are. Block 1 arrives from deep space;
-      // every Next flies the ship nearer, so the planet grows and grows.
-      const far = -52; const near = -5;
-      const targetZ = lerp(far, near, smooth);
-      heroZ += (targetZ - heroZ) * 0.045;
-      const closing = Math.abs(targetZ - heroZ);
-      const starSpeed = d.reducedMotion ? 0 : (1 + clampN(closing * 0.22, 0, 7));
+      const rate = Math.abs(d.scroll - smooth);              // how hard we're burning
+      const p = smooth * smooth * (3 - 2 * smooth);          // eased approach 0..1
+      const starSpeed = d.reducedMotion ? 0 : (1 + clampN(rate * 60, 0, 7));
 
       if (!d.reducedMotion) {
-        // Stars stream toward the ship — faster while closing the distance.
+        // Stars stream toward the ship — streaking hardest mid-burn.
         const sp = starGeo.attributes.position; const sp2 = star2Geo.attributes.position;
         for (let i = 0; i < sp.count; i += 1) { let z = sp.getZ(i) + dt * 9 * starSpeed; if (z > 10) z -= depth; sp.setZ(i, z); }
         for (let i = 0; i < sp2.count; i += 1) { let z = sp2.getZ(i) + dt * 14 * starSpeed; if (z > 10) z -= depth; sp2.setZ(i, z); }
         sp.needsUpdate = true; sp2.needsUpdate = true;
-        heroSurface.rotation.y += dt * 0.05;
+        heroSurface.rotation.y += dt * lerp(0.02, 0.004, p); // huge worlds turn slowly
         spiral.rotation.y += dt * 0.008;
       }
 
-      // The one destination planet, filling more of the windshield as you go.
-      const baseX = compact ? 1.5 : 2.4;
-      hero.position.z = heroZ;
-      hero.position.x = lerp(baseX + 0.5, baseX - 0.8, smooth);
-      hero.position.y = lerp(-0.7, -0.15, smooth);
-      const bob = Math.sin(t * 0.25) * 0.1;
-      camera.position.x = bob * 0.5;
-      camera.position.y = 0.2 + bob;
-      camera.rotation.z = 0;
-      camera.lookAt(lerp(0.9, 0.4, smooth), -0.1, -20);
+      // Real approach staging along the flight path:
+      //  p≈0   deep space — the planet is a small distant disc
+      //  p≈0.5 orbit — it looms and fills half the glass
+      //  p≈1   descent — its curved horizon stretches beneath the ship
+      hero.position.lerpVectors(farPos, nearPos, p);
+
+      // Atmosphere thickens and the limb brightens as you sink into it;
+      // the ring slides out of view once you drop below the ring plane.
+      atmoMat.opacity = lerp(0.08, 0.34, p);
+      limbMat.opacity = lerp(0.22, 0.5, p);
+      ringMat.opacity = 0.24 * (1 - clampN((p - 0.55) / 0.3, 0, 1));
+      // Space dims as the atmosphere takes over.
+      starMat.opacity = lerp(0.9, 0.35, p);
+      star2Mat.opacity = lerp(0.6, 0.2, p);
+      spiralMat.opacity = lerp(0.5, 0.12, p);
+
+      // Entry rumble on the final descent while still moving.
+      const rumble = (!d.reducedMotion && p > 0.7 && rate > 0.004) ? Math.sin(now * 0.055) * clampN(rate * 30, 0, 1) * 0.12 : 0;
+      const bob = Math.sin(t * 0.25) * 0.08;
+      camera.position.x = bob * 0.5 + rumble * 0.6;
+      camera.position.y = 0.2 + bob + rumble;
+      camera.rotation.z = rumble * 0.02;
+      // Nose tips down as the horizon rises to meet you.
+      camera.lookAt(lerp(1.2, 0, p), lerp(0.6, -2.6, p), -24);
 
       renderer.render(scene, camera);
       frame = requestAnimationFrame(animate);

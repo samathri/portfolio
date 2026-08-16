@@ -461,3 +461,7 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
   .pd-card{padding:24px 22px}
   .pd-features ul{grid-template-columns:1fr}
 }
+
+/* Altitude / flight-phase readout on the console screen */
+.console-screen .alt-readout{display:block;margin-top:4px;font:600 8px 'DM Mono',monospace;letter-spacing:.14em;color:#8ba0ab;font-style:normal}
+.console-screen .alt-readout{color:color-mix(in srgb,var(--accent) 70%,#8ba0ab)}

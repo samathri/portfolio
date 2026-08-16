@@ -317,6 +317,24 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
   const panel = panels[Math.min(block, last)];
   const throttle = last > 0 ? Math.round((block / last) * 100) : 0;
 
+  // Live altitude readout so it's always clear how close the planet is.
+  const approach = last > 0 ? block / last : 1;
+  const kmTarget = Math.round(12400 - approach * (12400 - 6));
+  const kmRef = useRef(kmTarget);
+  const [km, setKm] = useState(kmTarget);
+  useEffect(() => {
+    let raf;
+    const tick = () => {
+      kmRef.current += (kmTarget - kmRef.current) * 0.07;
+      if (Math.abs(kmRef.current - kmTarget) < 2) { kmRef.current = kmTarget; setKm(kmTarget); return; }
+      setKm(Math.round(kmRef.current));
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [kmTarget]);
+  const flightPhase = approach >= 1 ? 'TOUCHDOWN' : approach >= 0.66 ? 'DESCENT' : approach >= 0.33 ? 'ORBIT' : 'APPROACH';
+
   // Touch: swipe left/right to move between blocks (buttons still work too).
   const onTouchStart = (event) => { const point = event.touches[0]; touchRef.current = { x: point.clientX, y: point.clientY }; };
   const onTouchEnd = (event) => {
@@ -369,7 +387,7 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
           <button className="thruster prev" onClick={() => go(block - 1)} disabled={block === 0} aria-label="Previous block"><b>◄</b><span>Prev</span></button>
 
           <div className="console-mid">
-            <div className="console-screen"><small>BLOCK {String(block + 1).padStart(2, '0')} / {String(panels.length).padStart(2, '0')}</small><strong>{panel.dot}</strong></div>
+            <div className="console-screen"><small>BLOCK {String(block + 1).padStart(2, '0')} / {String(panels.length).padStart(2, '0')}</small><strong>{panel.dot}</strong><em className="alt-readout">{flightPhase} · {km.toLocaleString('en-US')} KM</em></div>
             <div className="block-switches">
               {panels.map((item, index) => (
                 <button key={item.key} className={index === block ? 'active' : ''} onClick={() => go(index)} title={item.dot} aria-label={item.dot} aria-current={index === block}>
