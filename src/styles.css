@@ -816,3 +816,217 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
   .throttle-lever{height:88px}
   .gauge{width:46px;height:46px}
 }
+
+/* ================================================================== *
+ *  Fit every instrument on one screen (no side-scrolling)
+ * ================================================================== */
+@media(max-width:900px){
+  .console-rack{grid-area:rack;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-areas:"lside eng stick data rside";gap:7px;overflow:visible;padding:0;mask-image:none;scroll-snap-type:none}
+  .console-rack>*{min-width:0;scroll-snap-align:none}
+  .console-side.left{grid-area:lside}
+  .console-eng{grid-area:eng;min-width:0}
+  .stick-bay{grid-area:stick}
+  .console-data{grid-area:data;min-width:0}
+  .console-side.right{grid-area:rside}
+}
+
+/* Phones: two compact rows hold all five bays — nothing is hidden. */
+@media(max-width:620px){
+  .console-rack{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"lside eng stick" "data data rside";gap:6px}
+  .console{gap:6px;padding:7px 10px 9px}
+
+  .console-side{padding:7px 6px;gap:5px;border-radius:8px}
+  .led-stack{gap:4px}
+  .led-row{gap:5px;font-size:6px;letter-spacing:.1em}
+  .led{width:7px;height:7px}
+  .switch-row{gap:4px}
+  .toggle{padding:4px 4px;gap:3px}
+  .toggle i{width:15px;height:8px}
+  .toggle i:before{width:6px;height:6px}
+  .toggle.on i:before{left:8px}
+  .toggle b{font-size:6px}
+  .boost{padding:5px 4px}
+  .boost b{font-size:6.5px}
+
+  .console-eng>b,.console-data>b{font-size:6px;letter-spacing:.1em}
+  .eng-row{gap:6px}
+  .eq{gap:2px}
+  .eq i{width:3px}
+  .knob-face{width:24px;height:24px}
+  .knob-face i{height:8px;transform:translateY(-6px)}
+  .knob>b{font-size:5.5px}
+  .console-eng>small{font-size:6px}
+
+  .stick-bay{padding:6px 6px}
+  .stick-pad{width:66px;height:80px}
+  .stick-bay>b{font-size:5.5px}
+  .stick-base-keys i{width:10px;height:6px}
+  .pad-arrow{font-size:7px}
+
+  .data-row{font-size:7px}
+  .data-row em{font-size:8px}
+  .keypad{gap:4px}
+  .keypad button{padding:4px 2px;font-size:6px;gap:2px}
+  .keypad button i{width:11px;height:3px}
+
+  .right-top{gap:6px}
+  .gauge{width:36px;height:36px}
+  .gauge b{font-size:7px}
+  .throttle-lever{width:44px;height:76px}
+  .tl-track{top:8px;bottom:20px;left:15px;width:7px}
+  .tl-handle{width:30px;height:14px}
+  .tl-handle i{width:18px}
+  .tl-ticks{top:8px;bottom:20px;right:5px}
+  .tl-ticks span{font-size:7px}
+  .throttle-lever>b{font-size:5.5px;bottom:4px}
+  .abort{padding:6px 6px;font-size:7px;letter-spacing:.1em}
+  .guard-cover:after{font-size:6px;letter-spacing:.14em}
+
+  .console-screen{padding:4px 10px}
+  .console-screen small{font-size:8px}
+  .console-screen strong{font-size:13px}
+  .console-screen .alt-readout{font-size:7px}
+  .navrow{gap:6px}
+  .navrow .arrow-btn{width:36px;height:36px;font-size:14px}
+  .navrow .block-switches{max-width:calc(100vw - 116px);gap:5px}
+  .block-switches button{min-width:40px;padding:5px 7px}
+}
+
+/* Phones: trim console height so the viewscreen keeps room to read */
+@media(max-width:620px){
+  /* keypad on one row instead of two */
+  .keypad{grid-template-columns:repeat(6,1fr);gap:3px}
+  .keypad button{padding:4px 1px;font-size:5.5px;letter-spacing:0}
+  .keypad button i{width:8px}
+  .console-data{gap:4px}
+  .data-row{padding:1px 0}
+  .throttle-lever{height:64px}
+  .tl-track{top:6px;bottom:17px}
+  .stick-pad{height:72px}
+  .stick2-handle{top:-38px}
+  .console-side{gap:4px}
+  .console-eng{gap:3px}
+  .guard{margin-top:0}
+  .abort{padding:5px 6px}
+}
+
+/* Phones: LEDs sit in a row and the gear shortens, freeing screen height */
+@media(max-width:620px){
+  .led-stack{display:flex;justify-content:space-between;gap:3px}
+  .led-row{flex-direction:column;gap:3px;align-items:center}
+  .led-row b{font-size:5.5px}
+  .throttle-lever{height:56px}
+  .tl-track{top:5px;bottom:15px}
+  .tl-handle{height:12px}
+  .tl-ticks{top:5px;bottom:15px}
+  .tl-ticks span{font-size:6px}
+  .gauge{width:32px;height:32px}
+  .gauge b{font-size:6px}
+}
+
+/* Phones: compact block content so it fits the shorter viewscreen */
+@media(max-width:620px){
+  .viewscreen-scroll{padding:14px 16px}
+  .viewscreen .story-eyebrow{margin-bottom:10px;padding:5px 10px;font-size:9px}
+  .viewscreen .story-title{font-size:clamp(22px,6.6vw,30px)}
+  .viewscreen .story-lead{margin-top:10px;font-size:15px}
+  .viewscreen .story-sub{margin-top:7px;font-size:12.5px}
+  .viewscreen .scroll-cue{margin-top:14px;font-size:9px}
+  .viewscreen .panel-kicker{margin-bottom:8px;font-size:9.5px}
+  .viewscreen .panel-icon{font-size:30px;margin-bottom:6px}
+  .viewscreen .panel-big{font-size:clamp(17px,5vw,24px)}
+  .viewscreen .panel-text{margin-top:9px;font-size:13.5px;line-height:1.6}
+  .viewscreen .panel-para{font-size:13.5px;line-height:1.6}
+
+  /* Project blocks: the browser mockup is redundant next to the title */
+  .viewscreen .project-frame{display:none}
+  .viewscreen .project-showcase{grid-template-columns:1fr;gap:0}
+  .viewscreen .project-meta{font-size:10px}
+  .viewscreen .chips{margin-top:10px;gap:6px}
+  .viewscreen .chips span{padding:6px 10px;font-size:11.5px}
+  .viewscreen .chips.small span{padding:4px 8px;font-size:10px}
+  .viewscreen .project-copy .btn{margin-top:12px;padding:10px 16px;font-size:13px}
+
+  /* About strengths: two compact cards per row */
+  .viewscreen .strength-grid{grid-template-columns:1fr 1fr;gap:7px;margin-top:6px}
+  .viewscreen .strength-card{padding:9px 10px;border-radius:9px}
+  .viewscreen .strength-card h3{font-size:12px;margin:0 0 4px}
+  .viewscreen .strength-card p{margin:0 0 7px;font-size:10px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .viewscreen .strength-card .bar{height:4px}
+
+  /* Contact: tighter channels and form */
+  .viewscreen .channel{padding:11px 12px;gap:4px}
+  .viewscreen .channel-icon{font-size:20px}
+  .viewscreen .channel-value{font-size:13px}
+  .viewscreen .contact-form{gap:7px;margin-top:9px}
+  .viewscreen .contact-form label{gap:3px;font-size:10px}
+  .viewscreen .contact-form input,.viewscreen .contact-form select{padding:7px 9px;font-size:13px}
+  .viewscreen .contact-form textarea{min-height:40px;padding:7px 9px;font-size:13px}
+  .viewscreen .contact-form>button{padding:9px;font-size:13px}
+  .viewscreen .cta-row{margin-top:12px;gap:8px}
+  .viewscreen .btn{padding:10px 15px;font-size:13px}
+}
+
+@media(max-width:620px){
+  .viewscreen .channel{padding:9px 11px}
+  .viewscreen .channel-grid{gap:7px}
+  .viewscreen .contact-form textarea{min-height:34px}
+  .viewscreen .contact-form{gap:6px}
+  .story-panel.is-form .panel-big,.viewscreen .panel-big{margin-bottom:0}
+}
+
+@media(max-width:620px){
+  .viewscreen-scroll.is-form .panel-big{font-size:17px}
+  .viewscreen-scroll.is-form .panel-kicker{margin-bottom:6px}
+  .viewscreen-scroll.is-form .contact-form{margin-top:7px}
+}
+
+/* Short phones: squeeze the console harder so content keeps usable room */
+@media(max-width:620px) and (max-height:720px){
+  .console{gap:5px;padding:5px 8px 7px}
+  .console-mid{gap:5px}
+  .console-mid .throttle{display:none}
+  .console-screen{padding:3px 9px}
+  .console-screen strong{font-size:12px}
+  .console-screen small{font-size:7.5px}
+  .console-screen .alt-readout{font-size:6.5px}
+  .navrow .arrow-btn{width:32px;height:32px;font-size:13px}
+  .block-switches button{min-width:36px;padding:4px 6px}
+  .block-switches button span{font-size:8px}
+  .console-rack{gap:5px}
+  .console-side,.stick-bay,.console-eng,.console-data{padding:5px}
+  .stick-pad{width:58px;height:62px}
+  .stick2-handle{top:-32px}
+  .stick2-shaft{top:-14px;height:13px}
+  .stick-base-keys{display:none}
+  .throttle-lever{height:48px;width:40px}
+  .tl-handle{height:11px;width:26px}
+  .gauge{width:28px;height:28px}
+  .gauge b{font-size:5.5px}
+  .knob-face{width:21px;height:21px}
+  .eq{height:16px}
+  .keypad button{padding:3px 1px}
+  .viewscreen{margin:5px 8px 4px}
+  .viewscreen-scroll{padding:10px 12px}
+}
+
+/* Shorter desktop/laptop windows: keep the contact form inside the screen */
+@media(min-width:621px) and (max-height:800px){
+  .viewscreen-scroll.is-form .contact-form{gap:12px;margin-top:14px}
+  .viewscreen-scroll.is-form .contact-form textarea{min-height:60px}
+  .viewscreen-scroll.is-form .panel-big{font-size:clamp(18px,2.2vw,28px)}
+}
+
+/* Shorter laptop windows: reclaim viewscreen padding so blocks still fit */
+@media(min-width:621px) and (max-height:800px){
+  .viewscreen-scroll{padding-top:20px;padding-bottom:20px}
+}
+
+/* Very short laptop windows: the message form gets a tighter layout */
+@media(min-width:621px) and (max-height:700px){
+  .viewscreen-scroll.is-form .contact-form{gap:9px;margin-top:10px}
+  .viewscreen-scroll.is-form .contact-form label{font-size:10px;gap:4px}
+  .viewscreen-scroll.is-form .contact-form input,.viewscreen-scroll.is-form .contact-form select{padding:8px 10px}
+  .viewscreen-scroll.is-form .contact-form textarea{min-height:42px;padding:8px 10px}
+  .viewscreen-scroll.is-form .contact-form>button{padding:10px}
+}
