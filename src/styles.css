@@ -1030,3 +1030,25 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
   .viewscreen-scroll.is-form .contact-form textarea{min-height:42px;padding:8px 10px}
   .viewscreen-scroll.is-form .contact-form>button{padding:10px}
 }
+
+/* Phones: block switches on one tight line (no scroll), slimmer readout */
+@media(max-width:620px){
+  .navrow{gap:5px}
+  .navrow .block-switches{max-width:none;flex:1 1 auto;overflow:visible;justify-content:space-between;gap:4px}
+  .navrow .block-switches button{min-width:0;flex:1 1 0;padding:5px 0;border-radius:6px}
+  .navrow .block-switches button i{display:none}
+  .navrow .block-switches button span{font-size:9px}
+  .navrow .arrow-btn{width:30px;height:28px;font-size:12px;border-radius:7px}
+  .console-screen{padding:3px 10px}
+  .console-screen small{font-size:7.5px}
+  .console-screen strong{font-size:12px;margin-top:1px}
+  .console-screen .alt-readout{margin-top:2px;font-size:6.5px}
+  .console-mid{gap:5px}
+  .console-mid .throttle{height:4px}
+}
+
+/* Phones: thinner viewscreen glass so the planet reads through it */
+@media(max-width:620px){
+  .viewscreen-frame{background:linear-gradient(160deg,color-mix(in srgb,var(--planet) 8%,rgba(4,10,20,.34)),rgba(2,6,14,.46))}
+  .viewscreen-scroll{text-shadow:0 1px 10px rgba(2,5,12,.85)}
+}

@@ -262,7 +262,10 @@ export default function StoryScene({ section, quality = 'medium', reducedMotion 
       camera.fov += (targetFov - camera.fov) * 0.08;
       camera.updateProjectionMatrix();
       // Nose follows the stick; the horizon still rises as you approach.
-      camera.lookAt(lerp(1.2, 0, p) - bank * 9, lerp(0.6, -2.6, p) + pitch * 6, -24);
+      // On phones the console fills the lower half of the screen, so the view
+      // is pitched down to lift the planet up into the visible windshield.
+      const viewBias = compact ? -9 : 0;
+      camera.lookAt(lerp(1.2, 0, p) - bank * 9, lerp(0.6, -2.6, p) + viewBias + pitch * 6, -24);
       // Roll must be applied after lookAt (which resets orientation).
       camera.rotation.z += rumble * 0.02 - bank * 0.3;
 
