@@ -744,3 +744,16 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
 .stick2-handle{transform-origin:center bottom;transition:transform .3s cubic-bezier(.22,.8,.2,1)}
 .stick-pad.is-dragging .stick2-handle{transition:none}
 .stick2-slot-y{bottom:20px}
+
+/* Stick v3: knob centered by default, no slot lines, arrows guide movement */
+.stick2-slot-x,.stick2-slot-y{display:none}
+.stick2{left:50%;top:50%;bottom:auto;transform-origin:center center}
+.stick2-handle{bottom:auto;top:-36px}
+.stick2-shaft{bottom:auto;top:-9px;height:22px}
+.stick2-boot{left:50%;top:50%;bottom:auto;transform:translate(-50%,14px)}
+.pad-arrow{font-size:9px;color:#54708a}
+@media(max-height:700px){.stick2-shaft{height:20px}.stick2-handle{top:-34px;bottom:auto}}
+
+/* Center the knob itself in the pad (assembly shifted down) */
+.stick2{top:calc(50% + 12px)}
+.stick2-boot{top:calc(50% + 12px)}

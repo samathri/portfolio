@@ -347,18 +347,16 @@ function FlightStick({ onMove }) {
         onPointerDown={onDown} onPointerMove={onDrag} onPointerUp={release} onPointerCancel={release}
         role="application" aria-label="Flight stick — drag to steer the ship in any direction"
       >
-        <i className="stick2-slot-y" aria-hidden="true" />
-        <i className="stick2-slot-x" aria-hidden="true" />
         <span className={`pad-arrow up ${vec.y < -0.2 ? 'on' : ''}`} aria-hidden="true">▲</span>
         <span className={`pad-arrow down ${vec.y > 0.2 ? 'on' : ''}`} aria-hidden="true">▼</span>
         <span className={`pad-arrow left ${vec.x < -0.2 ? 'on' : ''}`} aria-hidden="true">◄</span>
         <span className={`pad-arrow right ${vec.x > 0.2 ? 'on' : ''}`} aria-hidden="true">►</span>
-        <div className="stick2" style={{ transform: `rotate(${vec.x * 20}deg) translateY(${vec.y * 7}px) scaleY(${(1 + Math.min(0, vec.y) * 0.12).toFixed(3)})` }} aria-hidden="true">
+        <div className="stick2-boot" aria-hidden="true"><i /><i /><i /></div>
+        <div className="stick2" style={{ transform: `translate(${(vec.x * 16).toFixed(1)}px, ${(vec.y * 13).toFixed(1)}px) rotate(${(vec.x * 9).toFixed(1)}deg)` }} aria-hidden="true">
           {/* Push forward: knob shrinks away. Pull back: knob comes toward you, bigger. */}
-          <div className="stick2-handle" style={{ transform: `scale(${(1 + vec.y * 0.2).toFixed(3)})` }}><em className="stick2-btn" /><i /><i /><i /><span className="stick2-led" /></div>
+          <div className="stick2-handle" style={{ transform: `scale(${(1 + vec.y * 0.18).toFixed(3)})` }}><em className="stick2-btn" /><i /><i /><i /><span className="stick2-led" /></div>
           <div className="stick2-shaft" />
         </div>
-        <div className="stick2-boot" aria-hidden="true"><i /><i /><i /></div>
       </div>
       <div className="stick-base-keys" aria-hidden="true"><i /><i /><i /><i /></div>
       <b>FLIGHT STICK</b>
