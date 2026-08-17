@@ -712,3 +712,24 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
 @media(max-width:900px){.stick-bay{display:none}}
 @media(max-width:760px){.stick-bay{display:none}}
 @media(max-height:700px){.stick-pad{width:80px;height:80px}.stick-grip{bottom:26px}}
+
+/* ---- Flight stick v2: side-view mechanical stick, matched to the gear lever ---- */
+.stick-pad{position:relative;width:86px;height:104px;perspective:none;border-radius:9px;border:1px solid #263b4e;background:linear-gradient(180deg,#1e2f3e,#0a141f);box-shadow:inset 0 0 16px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.07);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.stick-pad.is-dragging{cursor:grabbing}
+.stick-ring,.stick-gimbal{display:none}
+.stick2-slot-y{position:absolute;left:50%;top:12px;bottom:16px;width:8px;transform:translateX(-50%);border-radius:5px;background:linear-gradient(180deg,#04090f,#0b1520);box-shadow:inset 0 0 6px #000,0 0 0 1px #1e3242}
+.stick2-slot-x{position:absolute;left:12px;right:12px;bottom:24px;height:8px;border-radius:5px;background:linear-gradient(180deg,#04090f,#0b1520);box-shadow:inset 0 0 6px #000,0 0 0 1px #1e3242}
+.stick2{position:absolute;left:50%;bottom:22px;width:0;height:0;transform-origin:center bottom;transition:transform .3s cubic-bezier(.22,.8,.2,1)}
+.stick-pad.is-dragging .stick2{transition:none}
+.stick2-shaft{position:absolute;left:-5px;bottom:0;width:10px;height:44px;border-radius:5px 5px 3px 3px;background:linear-gradient(90deg,#2b3d4c,#4a6072 45%,#1a2835);box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.14)}
+.stick2-handle{position:absolute;left:-16px;bottom:38px;width:32px;height:30px;border-radius:9px 9px 6px 6px;border:1px solid #4d6579;background:linear-gradient(180deg,#41586c,#15202b);box-shadow:0 3px 7px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.18);display:grid;gap:2.5px;place-content:center}
+.stick2-handle i{display:block;width:20px;height:1.6px;border-radius:1px;background:#0a141d}
+.stick2-btn{position:absolute;left:50%;top:-4px;width:10px;height:6px;transform:translateX(-50%);border-radius:3px 3px 1px 1px;background:radial-gradient(circle at 35% 30%,#ff7a7a,#b52a2a);box-shadow:0 0 5px #e3454577,inset 0 1px 0 rgba(255,255,255,.25)}
+.stick2-led{position:absolute;right:4px;bottom:4px;width:4px;height:4px;border-radius:50%;background:var(--accent);box-shadow:0 0 5px var(--accent)}
+.stick-pad.is-dragging .stick2-handle{box-shadow:0 3px 10px rgba(0,0,0,.7),0 0 14px color-mix(in srgb,var(--accent) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.18)}
+.stick2-boot{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:grid;justify-items:center;gap:1px;pointer-events:none}
+.stick2-boot i{display:block;height:5px;border-radius:2px;background:linear-gradient(180deg,#141e29,#0a121b);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.stick2-boot i:nth-child(1){width:22px}
+.stick2-boot i:nth-child(2){width:30px}
+.stick2-boot i:nth-child(3){width:38px}
+@media(max-height:700px){.stick-pad{width:78px;height:92px}.stick2-shaft{height:38px}.stick2-handle{bottom:32px}}

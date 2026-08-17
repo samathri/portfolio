@@ -347,19 +347,13 @@ function FlightStick({ onMove }) {
         onPointerDown={onDown} onPointerMove={onDrag} onPointerUp={release} onPointerCancel={release}
         role="application" aria-label="Flight stick — drag to steer the ship in any direction"
       >
-        <i className="stick-ring" aria-hidden="true" />
-        <i className="stick-gimbal" aria-hidden="true" />
-        <div className="stick" style={{ transform: `rotateX(${-vec.y * 26}deg) rotateY(${vec.x * 26}deg)` }} aria-hidden="true">
-          <div className="stick-shaft"><i /><i /></div>
-          <div className="stick-grip">
-            <i className="grip-face" />
-            <i className="hat" />
-            <i className="head-btn l" /><i className="head-btn r" />
-            <i className="orange-btn l" /><i className="orange-btn r" />
-            <i className="grip-accent" />
-            <i className="trigger" />
-          </div>
+        <i className="stick2-slot-y" aria-hidden="true" />
+        <i className="stick2-slot-x" aria-hidden="true" />
+        <div className="stick2" style={{ transform: `rotate(${vec.x * 20}deg) translateY(${vec.y * 7}px) scaleY(${(1 - Math.abs(vec.y) * 0.1).toFixed(3)})` }} aria-hidden="true">
+          <div className="stick2-handle"><em className="stick2-btn" /><i /><i /><i /><span className="stick2-led" /></div>
+          <div className="stick2-shaft" />
         </div>
+        <div className="stick2-boot" aria-hidden="true"><i /><i /><i /></div>
       </div>
       <div className="stick-base-keys" aria-hidden="true"><i /><i /><i /><i /></div>
       <b>FLIGHT STICK</b>
