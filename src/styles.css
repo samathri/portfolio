@@ -254,9 +254,8 @@
 .vs-corner.bl{bottom:12px;left:12px;border-right:0;border-top:0}
 .vs-corner.br{bottom:12px;right:12px;border-left:0;border-top:0}
 .vs-scanlines{position:absolute;inset:0;z-index:2;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 3px,color-mix(in srgb,var(--accent) 5%,transparent) 3px 4px);opacity:.5;mix-blend-mode:screen}
-.viewscreen-scroll{position:absolute;inset:0;z-index:1;overflow:auto;padding:clamp(24px,3.6vw,52px);display:grid;align-content:safe center;animation:vsIn .5s cubic-bezier(.22,.8,.2,1) both}
-.viewscreen-scroll::-webkit-scrollbar{width:8px}
-.viewscreen-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 40%,transparent);border-radius:8px}
+.viewscreen-scroll{position:absolute;inset:0;z-index:1;overflow:auto;padding:clamp(18px,2.6vw,36px) clamp(20px,3vw,44px);display:grid;align-content:safe center;animation:vsIn .5s cubic-bezier(.22,.8,.2,1) both;scrollbar-width:none}
+.viewscreen-scroll::-webkit-scrollbar{display:none}
 .viewscreen-scroll[data-dir="next"]{--fromx:70px}
 .viewscreen-scroll[data-dir="prev"]{--fromx:-70px}
 @keyframes vsIn{from{opacity:0;transform:translateX(var(--fromx,70px))}to{opacity:1;transform:none}}
@@ -335,7 +334,7 @@
 .project-showcase{display:grid;grid-template-columns:1.05fr .95fr;gap:4vw;align-items:center}
 .project-copy .btn{margin-top:22px}
 .project-meta{margin:10px 0 0;font:600 12px 'DM Mono',monospace;letter-spacing:.06em;color:var(--accent);text-transform:uppercase}
-.project-frame{border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:12px;overflow:hidden;background:linear-gradient(160deg,rgba(10,18,30,.9),rgba(3,8,16,.92));box-shadow:0 24px 60px rgba(0,0,0,.5),0 0 50px color-mix(in srgb,var(--planet) 18%,transparent)}
+.project-frame{width:100%;max-width:500px;justify-self:end;border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:12px;overflow:hidden;background:linear-gradient(160deg,rgba(10,18,30,.9),rgba(3,8,16,.92));box-shadow:0 24px 60px rgba(0,0,0,.5),0 0 50px color-mix(in srgb,var(--planet) 18%,transparent)}
 .frame-bar{display:flex;gap:7px;padding:12px 14px;border-bottom:1px solid rgba(150,180,200,.14);background:rgba(6,13,23,.8)}
 .frame-bar i{width:10px;height:10px;border-radius:50%;background:#2a3b49}
 .frame-bar i:first-child{background:#ff6b6b}.frame-bar i:nth-child(2){background:#ffcf4b}.frame-bar i:nth-child(3){background:#5dffc2}
@@ -429,7 +428,8 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
 .pd-back{position:absolute;z-index:6;top:22px;left:22px;display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);background:rgba(6,15,26,.6);color:#eaf3f8;cursor:pointer;font:600 12px/1 Manrope,sans-serif;padding:12px 16px;border-radius:40px;backdrop-filter:blur(8px);transition:.2s}
 .pd-back:hover{background:color-mix(in srgb,var(--accent) 22%,rgba(6,15,26,.6));border-color:var(--accent)}
 .pd-back b{color:var(--accent)}
-.pd-scroll{position:absolute;inset:0;z-index:3;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth}
+.pd-scroll{position:absolute;inset:0;z-index:3;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;scrollbar-width:none}
+.pd-scroll::-webkit-scrollbar{display:none}
 .pd-hero{min-height:100dvh;display:grid;align-items:end;padding:0 6vw 12vh}
 .pd-hero-cap{max-width:760px}
 .pd-hero-cap small{font:600 12px 'DM Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
@@ -466,3 +466,54 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
 /* Altitude / flight-phase readout on the console screen */
 .console-screen .alt-readout{display:block;margin-top:4px;font:600 8px 'DM Mono',monospace;letter-spacing:.14em;color:#8ba0ab;font-style:normal}
 .console-screen .alt-readout{color:color-mix(in srgb,var(--accent) 70%,#8ba0ab)}
+
+/* Fit-to-screen: compact the tallest viewscreen blocks so nothing scrolls */
+.strength-grid{gap:12px}
+.strength-card{padding:16px 18px}
+.strength-card h3{font-size:16px;margin:0 0 6px}
+.strength-card p{margin:0 0 12px;font-size:12.5px;line-height:1.5}
+.viewscreen .contact-form{gap:10px 14px;margin-top:12px}
+.viewscreen .contact-form label{gap:5px;font-size:11px}
+.viewscreen .contact-form input,.viewscreen .contact-form select{padding:9px 12px}
+.viewscreen .contact-form textarea{min-height:64px;padding:9px 12px}
+.viewscreen .contact-form>button{padding:11px}
+.viewscreen .transmission-success{margin-top:14px;padding:20px}
+
+/* Short screens (laptops with small viewports): compact everything so each
+   block truly fits without scrolling */
+@media(max-height:700px){
+  .story-eyebrow{margin-bottom:12px;padding:6px 11px;font-size:10px}
+  .story-title{font-size:clamp(24px,3.2vw,38px)}
+  .story-lead{margin-top:10px;font-size:16px}
+  .story-sub{margin-top:8px;font-size:13px}
+  .scroll-cue{margin-top:16px}
+  .panel-kicker{margin-bottom:8px}
+  .panel-icon{font-size:36px;margin-bottom:8px}
+  .panel-big{font-size:clamp(18px,2.2vw,30px)}
+  .panel-text{font-size:14px;margin-top:10px}
+  .panel-para{font-size:15px;line-height:1.6}
+  .project-frame{max-width:360px}
+  .frame-screen{padding:18px;gap:6px}
+  .project-meta{margin:6px 0 0}
+  .project-copy .btn{margin-top:12px;padding:10px 16px;font-size:13px}
+  .chips{margin-top:12px}.chips span{padding:7px 11px;font-size:12px}
+  .strength-grid{gap:9px}
+  .strength-card{padding:11px 14px}
+  .strength-card h3{font-size:14px}
+  .strength-card p{margin-bottom:8px;font-size:11.5px;line-height:1.45}
+  .channel{padding:14px 16px;gap:5px}
+  .channel-icon{font-size:22px}
+  .channel-value{font-size:14px}
+  .viewscreen .contact-form{gap:8px 12px;margin-top:10px}
+  .viewscreen .contact-form input,.viewscreen .contact-form select{padding:7px 10px}
+  .viewscreen .contact-form textarea{min-height:44px}
+  .viewscreen .contact-form>button{padding:9px}
+  .cta-row{margin-top:14px}
+  .console{gap:5px clamp(10px,2vw,24px);padding:8px max(14px,3vw)}
+  .thruster{padding:10px 0}
+  .console-screen{padding:4px 12px}
+  .console-screen strong{font-size:14px}
+  .block-switches button{padding:6px 10px;min-width:44px}
+  .nav-strip{padding-top:8px}
+  .nav-strip button{padding:6px 12px;font-size:10px}
+}
