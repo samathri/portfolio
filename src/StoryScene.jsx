@@ -71,9 +71,9 @@ function planetTexture(color, accent) {
  * starfield streams by. `scrollRef` (0..1, driven by the current content
  * block) gently banks the ship so changing blocks feels like flying.
  */
-export default function StoryScene({ section, quality = 'medium', reducedMotion = false, scrollRef }) {
+export default function StoryScene({ section, quality = 'medium', reducedMotion = false, scrollRef, flightRef }) {
   const mountRef = useRef(null);
-  const dataRef = useRef({ scroll: 0, reducedMotion });
+  const dataRef = useRef({ scroll: 0, reducedMotion, flight: null });
   useEffect(() => { dataRef.current.reducedMotion = reducedMotion; }, [reducedMotion]);
 
   useEffect(() => {
@@ -207,11 +207,16 @@ export default function StoryScene({ section, quality = 'medium', reducedMotion 
     const animate = (now) => {
       const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
       const d = dataRef.current;
-      smooth += (d.scroll - smooth) * 0.05;
+      const fl = d.flight || { gear: 2, boost: 0, cam: false };
+      // GEAR sets cruise speed: higher gear closes distance faster and the
+      // stars streak harder. BOOST is a decaying burst on top.
+      const gearMult = [0.55, 1, 1.9, 3.1][(fl.gear || 2) - 1];
+      fl.boost = Math.max(0, (fl.boost || 0) - dt * 0.85);
+      smooth += (d.scroll - smooth) * (0.02 + (fl.gear || 2) * 0.013);
       const t = now * 0.001;
       const rate = Math.abs(d.scroll - smooth);              // how hard we're burning
       const p = smooth * smooth * (3 - 2 * smooth);          // eased approach 0..1
-      const starSpeed = d.reducedMotion ? 0 : (1 + clampN(rate * 60, 0, 7));
+      const starSpeed = d.reducedMotion ? 0 : ((1 + clampN(rate * 60, 0, 7)) * gearMult + fl.boost * 10);
 
       if (!d.reducedMotion) {
         // Stars stream toward the ship — streaking hardest mid-burn.
@@ -239,12 +244,17 @@ export default function StoryScene({ section, quality = 'medium', reducedMotion 
       star2Mat.opacity = lerp(0.6, 0.2, p);
       spiralMat.opacity = lerp(0.5, 0.12, p);
 
-      // Entry rumble on the final descent while still moving.
-      const rumble = (!d.reducedMotion && p > 0.7 && rate > 0.004) ? Math.sin(now * 0.055) * clampN(rate * 30, 0, 1) * 0.12 : 0;
+      // Entry rumble on the final descent, plus a kick while boosting.
+      const rumbleAmt = clampN(rate * 30, 0, 1) * ((p > 0.7 && rate > 0.004) ? 0.12 : 0) + fl.boost * 0.1;
+      const rumble = d.reducedMotion ? 0 : Math.sin(now * 0.055) * rumbleAmt;
       const bob = Math.sin(t * 0.25) * 0.08;
       camera.position.x = bob * 0.5 + rumble * 0.6;
       camera.position.y = 0.2 + bob + rumble;
       camera.rotation.z = rumble * 0.02;
+      // CAM toggle widens the view; boost adds a warp-stretch FOV kick.
+      const targetFov = (compact ? 72 : 60) + (fl.cam ? 9 : 0) + fl.boost * 8;
+      camera.fov += (targetFov - camera.fov) * 0.08;
+      camera.updateProjectionMatrix();
       // Nose tips down as the horizon rises to meet you.
       camera.lookAt(lerp(1.2, 0, p), lerp(0.6, -2.6, p), -24);
 
@@ -272,10 +282,14 @@ export default function StoryScene({ section, quality = 'medium', reducedMotion 
   useEffect(() => {
     if (!scrollRef) return undefined;
     let raf;
-    const tick = () => { dataRef.current.scroll = scrollRef.current || 0; raf = requestAnimationFrame(tick); };
+    const tick = () => {
+      dataRef.current.scroll = scrollRef.current || 0;
+      if (flightRef) dataRef.current.flight = flightRef.current;
+      raf = requestAnimationFrame(tick);
+    };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [scrollRef]);
+  }, [scrollRef, flightRef]);
 
   return <div className="story-scene" ref={mountRef} aria-hidden="true" />;
 }

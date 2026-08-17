@@ -278,8 +278,24 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
 
   const [block, setBlock] = useState(0);
   const [dir, setDir] = useState('next');
-  const [sys, setSys] = useState({ cam: true, grid: true, map: false, log: true });
+  const [sys, setSys] = useState({ cam: false, grid: true, map: false, log: false, auto: false });
   const flip = (kkey) => setSys((state) => ({ ...state, [kkey]: !state[kkey] }));
+
+  // Flight systems: GEAR sets cruise speed, BOOST fires a burst — both are
+  // read live by the 3D scene each frame.
+  const [gear, setGear] = useState(2);
+  const flightRef = useRef({ gear: 2, boost: 0, cam: false });
+  useEffect(() => { flightRef.current.gear = gear; }, [gear]);
+  useEffect(() => { flightRef.current.cam = sys.cam; }, [sys.cam]);
+
+  // Mission flight log — records what the pilot does.
+  const missionStart = useRef(Date.now());
+  const [logs, setLogs] = useState([]);
+  const addLog = useCallback((line) => {
+    const stamp = `T+${String(Math.round((Date.now() - missionStart.current) / 1000)).padStart(3, '0')}s`;
+    setLogs((list) => [...list.slice(-6), `${stamp}  ${line}`]);
+  }, []);
+  const fireBoost = () => { flightRef.current.boost = 1; addLog('BOOST FIRED — engines at maximum'); };
 
   const go = useCallback((target) => {
     setBlock((current) => {
@@ -335,6 +351,23 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
   }, [kmTarget]);
   const flightPhase = approach >= 1 ? 'TOUCHDOWN' : approach >= 0.66 ? 'DESCENT' : approach >= 0.33 ? 'ORBIT' : 'APPROACH';
 
+  // Log every course change.
+  useEffect(() => { addLog(`NAV → BLOCK ${String(block + 1).padStart(2, '0')} · ${panels[Math.min(block, last)].dot}`); }, [block]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Autopilot: tours the blocks on its own until switched off.
+  useEffect(() => {
+    if (!sys.auto) return undefined;
+    const id = setInterval(() => {
+      setBlock((current) => {
+        const nextBlock = (current + 1) % (last + 1);
+        setDir('next');
+        progressRef.current = last > 0 ? nextBlock / last : 0;
+        return nextBlock;
+      });
+    }, 6000);
+    return () => clearInterval(id);
+  }, [sys.auto, last]);
+
   // Touch: swipe left/right to move between blocks (buttons still work too).
   const onTouchStart = (event) => { const point = event.touches[0]; touchRef.current = { x: point.clientX, y: point.clientY }; };
   const onTouchEnd = (event) => {
@@ -348,7 +381,7 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
 
   return (
     <section className={`cockpit section-${section.id}`} style={{ '--planet': section.color, '--accent': section.accent }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <StoryScene section={section} quality={quality} reducedMotion={reducedMotion} scrollRef={progressRef} />
+      <StoryScene section={section} quality={quality} reducedMotion={reducedMotion} scrollRef={progressRef} flightRef={flightRef} />
       <div className="cockpit-glass" />
 
       <div className="cockpit-frame">
@@ -379,8 +412,12 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
               <div className="led-row"><i className="led warn" /><b>O2</b></div>
             </div>
             <div className="switch-row">
-              <button type="button" className={`toggle ${sys.cam ? 'on' : ''}`} onClick={() => flip('cam')} aria-pressed={sys.cam} title="Camera"><i /><b>CAM</b></button>
+              <button type="button" className={`toggle ${sys.cam ? 'on' : ''}`} onClick={() => { flip('cam'); addLog(sys.cam ? 'CAMERA — standard view' : 'CAMERA — wide view'); }} aria-pressed={sys.cam} title="Wide camera"><i /><b>CAM</b></button>
               <button type="button" className={`toggle ${sys.grid ? 'on' : ''}`} onClick={() => flip('grid')} aria-pressed={sys.grid} title="Screen grid"><i /><b>GRID</b></button>
+            </div>
+            <div className="switch-row">
+              <button type="button" className={`toggle ${sys.auto ? 'on' : ''}`} onClick={() => { flip('auto'); addLog(sys.auto ? 'AUTOPILOT disengaged' : 'AUTOPILOT engaged — touring blocks'); }} aria-pressed={sys.auto} title="Autopilot tour"><i /><b>AUTO</b></button>
+              <button type="button" className="boost" onClick={fireBoost} title="Fire boost"><b>BOOST</b></button>
             </div>
           </div>
 
@@ -401,7 +438,17 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
           <button className="thruster next" onClick={() => go(block + 1)} disabled={block === last} aria-label="Next block"><b>►</b><span>Next</span></button>
 
           <div className="console-side right">
-            <div className="gauge" style={{ '--v': throttle }} aria-hidden="true"><b>THR</b></div>
+            <div className="right-top">
+              <div className="gauge" style={{ '--v': throttle }} aria-hidden="true"><b>THR</b></div>
+              <div className="gear" role="group" aria-label="Flight gear — sets cruise speed">
+                <b>GEAR</b>
+                <div className="gear-slots">
+                  {[4, 3, 2, 1].map((g) => (
+                    <button key={g} className={gear === g ? 'active' : ''} onClick={() => { setGear(g); addLog(`GEAR ${g} engaged — ${['slow cruise', 'standard', 'fast', 'overdrive'][g - 1]}`); }} aria-pressed={gear === g}>{g}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
             <div className="switch-row">
               <button type="button" className={`toggle ${sys.map ? 'on' : ''}`} onClick={() => flip('map')} aria-pressed={sys.map} title="Star map"><i /><b>MAP</b></button>
               <button type="button" className={`toggle ${sys.log ? 'on' : ''}`} onClick={() => flip('log')} aria-pressed={sys.log} title="Flight log"><i /><b>LOG</b></button>
@@ -422,6 +469,33 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
             ))}
           </nav>
         </div>
+
+        {sys.map && (
+          <div className="radar" role="group" aria-label="Star map — click a planet to fly there">
+            <i className="radar-sweep" aria-hidden="true" />
+            <i className="radar-ring r1" aria-hidden="true" /><i className="radar-ring r2" aria-hidden="true" />
+            {destinations.map((item, index) => {
+              const angle = (index / destinations.length) * Math.PI * 2 - Math.PI / 2;
+              return (
+                <button
+                  key={item.id}
+                  className={item.id === section.id ? 'me' : ''}
+                  style={{ '--planet': item.color, left: `${50 + Math.cos(angle) * 36}%`, top: `${50 + Math.sin(angle) * 36}%` }}
+                  title={item.friendlyTitle}
+                  onClick={() => item.id !== section.id && onWarp(item.id)}
+                />
+              );
+            })}
+            <span>STAR MAP</span>
+          </div>
+        )}
+
+        {sys.log && (
+          <div className="flight-log" aria-label="Flight log">
+            <b>◉ FLIGHT LOG</b>
+            {logs.map((line, index) => <span key={index}>{line}</span>)}
+          </div>
+        )}
       </div>
 
       {openProject && <ProjectDetail project={openProject} color={section.color} accent={section.accent} quality={quality} reducedMotion={reducedMotion} onClose={closeProject} />}

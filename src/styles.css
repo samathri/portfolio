@@ -517,3 +517,43 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
   .nav-strip{padding-top:8px}
   .nav-strip button{padding:6px 12px;font-size:10px}
 }
+
+/* ---- Game-style flight controls: gear lever, boost, radar, flight log ---- */
+.boost{display:grid;place-items:center;padding:8px 10px;border:1px solid #ff6b6b88;border-radius:6px;background:linear-gradient(180deg,#3a1218,#160608);color:#ffb3b3;cursor:pointer;transition:.15s;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -5px 10px rgba(0,0,0,.5),0 0 12px #ff6b6b22}
+.boost b{font:800 8px 'DM Mono',monospace;letter-spacing:.12em}
+.boost:hover{background:linear-gradient(180deg,#5a1a22,#20080b);box-shadow:0 0 18px #ff6b6b55}
+.boost:active{transform:translateY(2px)}
+.right-top{display:flex;gap:10px;align-items:center;justify-content:center}
+.gear{display:grid;justify-items:center;gap:5px}
+.gear>b{font:700 7px 'DM Mono',monospace;letter-spacing:.16em;color:#8ba0ab}
+.gear-slots{display:grid;gap:3px;padding:5px;border:1px solid rgba(120,160,185,.22);border-radius:7px;background:rgba(3,9,17,.7);box-shadow:inset 0 0 10px rgba(0,0,0,.6)}
+.gear-slots button{width:34px;height:20px;border:1px solid rgba(120,160,185,.2);border-radius:4px;background:linear-gradient(180deg,#1a2938,#0a141f);color:#7f95a1;cursor:pointer;font:800 10px 'DM Mono',monospace;transition:.15s;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.gear-slots button:hover{color:#eaf6ff;border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+.gear-slots button.active{background:color-mix(in srgb,var(--accent) 30%,#0a141f);border-color:var(--accent);color:#fff;box-shadow:0 0 12px color-mix(in srgb,var(--accent) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.1)}
+
+.radar{position:absolute;z-index:7;right:18px;bottom:calc(100% - 74px);width:150px;aspect-ratio:1;border-radius:50%;border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);background:radial-gradient(circle,#04121c 0%,#020a12 70%),#020a12;box-shadow:0 14px 40px rgba(0,0,0,.6),inset 0 0 30px rgba(0,0,0,.7),0 0 20px color-mix(in srgb,var(--accent) 15%,transparent)}
+.cockpit .radar{bottom:auto;top:74px;right:18px}
+.radar-ring{position:absolute;border-radius:50%;border:1px solid color-mix(in srgb,var(--accent) 20%,transparent)}
+.radar-ring.r1{inset:18%}
+.radar-ring.r2{inset:36%}
+.radar-sweep{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,color-mix(in srgb,var(--accent) 35%,transparent),transparent 22%);animation:radarSweep 3.2s linear infinite;pointer-events:none}
+@keyframes radarSweep{to{transform:rotate(360deg)}}
+.radar>button{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border:0;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff9,var(--planet) 45%,#04070d 85%);box-shadow:0 0 8px var(--planet);cursor:pointer;transition:.2s}
+.radar>button:hover{transform:scale(1.35)}
+.radar>button.me{box-shadow:0 0 10px var(--planet),0 0 0 3px color-mix(in srgb,var(--accent) 55%,transparent);animation:ledBlink 1.6s infinite;cursor:default}
+.radar>span{position:absolute;left:50%;bottom:9px;transform:translateX(-50%);font:700 6px 'DM Mono',monospace;letter-spacing:.2em;color:#8ba0ab}
+
+.flight-log{position:absolute;z-index:7;left:18px;top:74px;width:min(300px,42vw);padding:12px 14px;display:grid;gap:5px;border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:8px;background:rgba(2,8,15,.82);backdrop-filter:blur(8px);box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.flight-log b{font:700 8px 'DM Mono',monospace;letter-spacing:.18em;color:var(--accent);margin-bottom:2px}
+.flight-log span{font:500 9px 'DM Mono',monospace;letter-spacing:.03em;color:#9fd8b4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:logIn .3s ease both}
+@keyframes logIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+
+@media(max-height:700px){
+  .gear-slots button{width:30px;height:16px;font-size:9px}
+  .right-top{gap:7px}
+  .radar{width:120px}
+}
+@media(max-width:760px){
+  .radar{width:110px;right:10px;top:64px}
+  .flight-log{left:10px;top:64px;width:min(240px,60vw)}
+}
