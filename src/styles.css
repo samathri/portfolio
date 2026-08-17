@@ -765,3 +765,21 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
 .stick2-shaft{top:-22px;height:22px}
 .stick2-boot{top:calc(50% + 26px);transform:translate(-50%,-3px)}
 @media(max-height:700px){.stick2{top:calc(50% + 24px)}.stick2-shaft{top:-20px;height:20px}.stick2-handle{top:-46px}.stick2-boot{top:calc(50% + 24px)}}
+
+/* ---- Stick v5: centered 4-way gate — stick rides the cross slots ---- */
+.gate-arm{position:absolute;border-radius:4px;background:linear-gradient(180deg,#060d15,#0d1926);box-shadow:inset 0 0 5px #000,0 0 0 1px #24384a;pointer-events:none}
+.gate-arm.v{left:50%;width:8px;height:26px;transform:translateX(-50%)}
+.gate-arm.h{top:50%;width:26px;height:8px;transform:translateY(-50%)}
+.gate-arm.up{top:calc(50% - 30px)}
+.gate-arm.down{top:calc(50% + 4px)}
+.gate-arm.left{left:calc(50% - 30px)}
+.gate-arm.right{left:calc(50% + 4px)}
+.gate-hub{position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 40% 32%,#0f1c2a,#060d15);box-shadow:inset 0 0 5px #000,0 0 0 1px #24384a;pointer-events:none}
+.stick2{top:50%;left:50%;transform-origin:0 0}
+.stick2-shaft{top:-16px;height:15px;width:9px;left:-4.5px}
+.stick2-handle{top:-42px;bottom:auto}
+.stick2-boot{position:absolute;left:0;top:-4px;bottom:auto;transform:translateX(-50%);display:grid;justify-items:center;gap:1px}
+.stick2-boot i:nth-child(1){width:16px;height:4px}
+.stick2-boot i:nth-child(2){width:22px;height:4px}
+.stick2-boot i:nth-child(3){width:28px;height:4px}
+@media(max-height:700px){.stick2{top:50%}.stick2-shaft{top:-15px;height:14px}.stick2-handle{top:-40px}.stick2-boot{top:-4px}}

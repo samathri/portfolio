@@ -333,9 +333,10 @@ function FlightStick({ onMove }) {
     const rect = padRef.current.getBoundingClientRect();
     const dx = (event.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
     const dy = (event.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
-    const len = Math.hypot(dx, dy);
-    const scale = len > 1 ? 1 / len : 1; // clamp to the gimbal circle
-    set(clamp(dx * scale, -1, 1), clamp(dy * scale, -1, 1));
+    // Gate lock: the stick travels along the cross slots only — whichever
+    // axis dominates the drag wins, like a 4-way shifter gate.
+    if (Math.abs(dx) >= Math.abs(dy)) set(clamp(dx, -1, 1), 0);
+    else set(0, clamp(dy, -1, 1));
   };
   const onDown = (event) => { setDragging(true); try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch { /* best effort */ } fromEvent(event); };
   const onDrag = (event) => { if (dragging) fromEvent(event); };
@@ -351,12 +352,15 @@ function FlightStick({ onMove }) {
         <span className={`pad-arrow down ${vec.y > 0.2 ? 'on' : ''}`} aria-hidden="true">▼</span>
         <span className={`pad-arrow left ${vec.x < -0.2 ? 'on' : ''}`} aria-hidden="true">◄</span>
         <span className={`pad-arrow right ${vec.x > 0.2 ? 'on' : ''}`} aria-hidden="true">►</span>
-        <div className="stick2-boot" aria-hidden="true"><i /><i /><i /></div>
-        {/* The whole stick pivots around the boot like a real gimbal: lean for
-            left/right, compress away / extend toward you for push/pull. */}
-        <div className="stick2" style={{ transform: `rotate(${(vec.x * 22).toFixed(1)}deg) scaleY(${(1 + vec.y * 0.18).toFixed(3)})` }} aria-hidden="true">
-          <div className="stick2-handle" style={{ transform: `scale(${(1 + vec.y * 0.15).toFixed(3)})` }}><em className="stick2-btn" /><i /><i /><i /><span className="stick2-led" /></div>
+        {/* The 4-way gate: four travel slots meeting at the center hub. */}
+        <i className="gate-arm v up" aria-hidden="true" /><i className="gate-arm v down" aria-hidden="true" />
+        <i className="gate-arm h left" aria-hidden="true" /><i className="gate-arm h right" aria-hidden="true" />
+        <i className="gate-hub" aria-hidden="true" />
+        {/* The whole stick (boot included) rides along the gate slots. */}
+        <div className="stick2" style={{ transform: `translate(${(vec.x * 18).toFixed(1)}px, ${(vec.y * 15).toFixed(1)}px) rotate(${(vec.x * 8).toFixed(1)}deg)` }} aria-hidden="true">
+          <div className="stick2-handle" style={{ transform: `scale(${(1 + vec.y * 0.13).toFixed(3)})` }}><em className="stick2-btn" /><i /><i /><i /><span className="stick2-led" /></div>
           <div className="stick2-shaft" />
+          <div className="stick2-boot"><i /><i /><i /></div>
         </div>
       </div>
       <div className="stick-base-keys" aria-hidden="true"><i /><i /><i /><i /></div>
