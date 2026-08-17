@@ -274,7 +274,7 @@ function ThrottleLever({ gear, onChange }) {
     const next = 1 + Math.round(ratio * 3);
     if (next !== gear) onChange(next);
   };
-  const onDown = (event) => { setDragging(true); event.currentTarget.setPointerCapture?.(event.pointerId); setFromY(event.clientY); };
+  const onDown = (event) => { setDragging(true); try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch { /* capture is best-effort */ } setFromY(event.clientY); };
   const onMove = (event) => { if (dragging) setFromY(event.clientY); };
   const stop = () => setDragging(false);
   const pos = ((gear - 1) / 3) * 100;
@@ -315,7 +315,8 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
 
   const [block, setBlock] = useState(0);
   const [dir, setDir] = useState('next');
-  const [sys, setSys] = useState({ cam: false, grid: true, map: false, log: false, auto: false });
+  const [sys, setSys] = useState({ cam: false, grid: true, map: true, log: false, auto: false });
+  const [fuel, setFuel] = useState(92);
   const flip = (kkey) => setSys((state) => ({ ...state, [kkey]: !state[kkey] }));
 
   // Flight systems: GEAR sets cruise speed, BOOST fires a burst — both are
@@ -332,7 +333,7 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
     const stamp = `T+${String(Math.round((Date.now() - missionStart.current) / 1000)).padStart(3, '0')}s`;
     setLogs((list) => [...list.slice(-6), `${stamp}  ${line}`]);
   }, []);
-  const fireBoost = () => { flightRef.current.boost = 1; addLog('BOOST FIRED — engines at maximum'); };
+  const fireBoost = () => { flightRef.current.boost = 1; setFuel((level) => Math.max(8, level - 6)); addLog('BOOST FIRED — engines at maximum'); };
 
   const go = useCallback((target) => {
     setBlock((current) => {
@@ -485,19 +486,20 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
             </div>
           </div>
 
-          <nav className="nav-strip" aria-label="Fly to another planet">
-            <span>Fly to</span>
-            {destinations.map((item) => (
-              <button
-                key={item.id}
-                className={item.id === section.id ? 'active' : ''}
-                style={{ '--planet': item.color, '--accent': item.accent }}
-                onClick={() => item.id !== section.id && onWarp(item.id)}
-                title={`${item.friendlyTitle} — ${item.name}`}
-                aria-current={item.id === section.id}
-              ><i /><b>{item.friendlyTitle}</b></button>
-            ))}
-          </nav>
+          <div className="console-eng" aria-hidden="true">
+            <b>ENGINE TRACE</b>
+            <div className="eq" style={{ '--eq': `${(1.5 / gear).toFixed(2)}s` }}>
+              <i /><i /><i /><i /><i /><i /><i />
+            </div>
+            <small>{['IDLE', 'NOMINAL', 'HIGH OUTPUT', 'REDLINE'][gear - 1]}</small>
+          </div>
+
+          <div className="console-data" aria-hidden="true">
+            <b>FLIGHT DATA</b>
+            <div className="data-row"><span>VEL</span><em>{[12, 28, 54, 90][gear - 1]} KM/S</em></div>
+            <div className="data-row"><span>ALT</span><em>{km.toLocaleString('en-US')} KM</em></div>
+            <div className="data-row fuel"><span>FUEL</span><i><u style={{ width: `${fuel}%` }} /></i><em>{fuel}%</em></div>
+          </div>
         </div>
 
         {sys.map && (

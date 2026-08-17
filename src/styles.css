@@ -594,3 +594,30 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
 .tl-ticks span.lit{color:var(--accent);text-shadow:0 0 7px var(--accent)}
 .throttle-lever>b{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font:700 7px 'DM Mono',monospace;letter-spacing:.16em;color:#8ba0ab}
 @media(max-height:700px){.throttle-lever{height:96px}}
+
+/* ---- Console v3: instruments fill the whole panel, radar is the map ---- */
+.console{grid-template-columns:minmax(0,auto) auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,auto);grid-template-rows:auto;grid-template-areas:"lside prev eng mid data next rside"}
+.console-eng,.console-data{position:relative;align-self:stretch;display:grid;align-content:center;justify-items:center;gap:7px;padding:10px 16px;border:1px solid #263b4e;border-radius:10px;background:linear-gradient(180deg,#223343,#0d1826 24%,#091220);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),inset 0 -8px 16px rgba(0,0,0,.55),0 3px 5px rgba(0,0,0,.45)}
+.console-eng{grid-area:eng}
+.console-data{grid-area:data;justify-items:stretch}
+.console-eng:before,.console-data:before{content:"";position:absolute;inset:4px;border:1px dashed rgba(140,175,200,.12);border-radius:7px;pointer-events:none}
+.console-eng>b,.console-data>b{font:700 7px 'DM Mono',monospace;letter-spacing:.18em;color:#8ba0ab;justify-self:center}
+.console-eng small{font:600 8px 'DM Mono',monospace;letter-spacing:.12em;color:var(--accent)}
+.eq{display:flex;gap:5px;align-items:flex-end;height:30px}
+.eq i{width:7px;height:100%;border-radius:2px;background:linear-gradient(0deg,color-mix(in srgb,var(--accent) 75%,#0a1a26),var(--accent));box-shadow:0 0 8px color-mix(in srgb,var(--accent) 35%,transparent);transform-origin:bottom;animation:eqBar var(--eq,1s) ease-in-out infinite}
+.eq i:nth-child(1){animation-delay:0s}.eq i:nth-child(2){animation-delay:.12s}.eq i:nth-child(3){animation-delay:.24s}.eq i:nth-child(4){animation-delay:.06s}.eq i:nth-child(5){animation-delay:.3s}.eq i:nth-child(6){animation-delay:.18s}.eq i:nth-child(7){animation-delay:.09s}
+@keyframes eqBar{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+.data-row{display:grid;grid-template-columns:34px 1fr;align-items:center;gap:10px;width:100%}
+.data-row span{font:700 8px 'DM Mono',monospace;letter-spacing:.12em;color:#8ba0ab}
+.data-row em{font:700 11px 'DM Mono',monospace;font-style:normal;color:var(--accent);text-align:right;text-shadow:0 0 8px color-mix(in srgb,var(--accent) 40%,transparent)}
+.data-row.fuel{grid-template-columns:34px 1fr 34px}
+.data-row.fuel i{height:5px;border-radius:3px;background:rgba(120,150,165,.18);overflow:hidden;box-shadow:inset 0 0 4px #000}
+.data-row.fuel u{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#ffcf4b,#5dffc2);box-shadow:0 0 8px #5dffc255;transition:width .4s}
+@media(max-width:1100px){.console-eng,.console-data{padding:8px 10px}.data-row em{font-size:10px}}
+@media(max-width:900px){.console-eng{display:none}}
+@media(max-width:760px){
+  .console{grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto;grid-template-areas:"prev mid next"}
+  .console-eng,.console-data{display:none}
+  .block-switches{max-width:none}
+}
+@media(max-height:700px){.eq{height:22px}.console-eng,.console-data{gap:5px;padding:8px 12px}}
