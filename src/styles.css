@@ -783,3 +783,36 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
 .stick2-boot i:nth-child(2){width:22px;height:4px}
 .stick2-boot i:nth-child(3){width:28px;height:4px}
 @media(max-height:700px){.stick2{top:50%}.stick2-shaft{top:-15px;height:14px}.stick2-handle{top:-40px}.stick2-boot{top:-4px}}
+
+/* ================================================================== *
+ *  Console rack: every instrument stays reachable on small screens
+ * ================================================================== */
+/* Desktop: the rack is invisible so its children sit in the console grid. */
+.console-rack{display:contents}
+
+/* Tablet + phone: mid stays put, the instruments become a scroll strip. */
+@media(max-width:900px){
+  .console{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;grid-template-areas:"mid" "rack";gap:8px;padding:8px max(12px,2.5vw) 10px}
+  .console-rack{grid-area:rack;display:flex;flex-wrap:nowrap;align-items:stretch;gap:8px;overflow-x:auto;overflow-y:hidden;padding:2px 0 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;mask-image:linear-gradient(90deg,transparent,#000 2%,#000 98%,transparent)}
+  .console-rack::-webkit-scrollbar{display:none}
+  .console-rack>*{flex:0 0 auto;scroll-snap-align:center}
+  /* Un-hide the bays that earlier breakpoints had removed. */
+  .console-side{display:grid;align-content:center;gap:7px;padding:9px 11px}
+  .console-eng{display:grid;min-width:150px}
+  .console-data{display:grid;min-width:190px}
+  .stick-bay{display:grid}
+  .navrow{justify-content:center}
+}
+
+@media(max-width:760px){
+  .console-eng{min-width:142px}
+  .console-data{min-width:180px}
+  .console-side{padding:8px 10px}
+  .eng-row{gap:9px}
+  .keypad{grid-template-columns:repeat(3,1fr);gap:4px}
+  .keypad button{padding:5px 3px;font-size:6.5px}
+  .stick-pad{width:74px;height:88px}
+  .right-top{gap:8px}
+  .throttle-lever{height:88px}
+  .gauge{width:46px;height:46px}
+}

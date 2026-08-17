@@ -522,6 +522,26 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
         </div>
 
         <div className="console">
+          <div className="console-mid">
+            <div className="console-screen"><small>BLOCK {String(block + 1).padStart(2, '0')} / {String(panels.length).padStart(2, '0')}</small><strong>{panel.dot}</strong><em className="alt-readout">{flightPhase} · {km.toLocaleString('en-US')} KM</em></div>
+            <div className="navrow">
+              <button className="arrow-btn" onClick={() => go(block - 1)} disabled={block === 0} aria-label="Previous block">◄</button>
+              <div className="block-switches">
+                {panels.map((item, index) => (
+                  <button key={item.key} className={index === block ? 'active' : ''} onClick={() => go(index)} title={item.dot} aria-label={item.dot} aria-current={index === block}>
+                    <i /><span>{String(index + 1).padStart(2, '0')}</span>
+                  </button>
+                ))}
+              </div>
+              <button className="arrow-btn" onClick={() => go(block + 1)} disabled={block === last} aria-label="Next block">►</button>
+            </div>
+            <div className="throttle" aria-hidden="true"><span style={{ width: `${throttle}%` }} /></div>
+          </div>
+
+          {/* Instrument bays. On desktop these sit in the console grid via
+              display:contents; on small screens the rack becomes one
+              horizontally scrollable strip so every control stays reachable. */}
+          <div className="console-rack">
           <div className="console-side left">
             <div className="led-stack" aria-hidden="true">
               <div className="led-row"><i className="led on" /><b>PWR</b></div>
@@ -547,22 +567,6 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
               <Knob value={lights} onChange={setLights} label="LIGHTS" />
             </div>
             <small>{['IDLE', 'NOMINAL', 'HIGH OUTPUT', 'REDLINE'][gear - 1]}</small>
-          </div>
-
-          <div className="console-mid">
-            <div className="console-screen"><small>BLOCK {String(block + 1).padStart(2, '0')} / {String(panels.length).padStart(2, '0')}</small><strong>{panel.dot}</strong><em className="alt-readout">{flightPhase} · {km.toLocaleString('en-US')} KM</em></div>
-            <div className="navrow">
-              <button className="arrow-btn" onClick={() => go(block - 1)} disabled={block === 0} aria-label="Previous block">◄</button>
-              <div className="block-switches">
-                {panels.map((item, index) => (
-                  <button key={item.key} className={index === block ? 'active' : ''} onClick={() => go(index)} title={item.dot} aria-label={item.dot} aria-current={index === block}>
-                    <i /><span>{String(index + 1).padStart(2, '0')}</span>
-                  </button>
-                ))}
-              </div>
-              <button className="arrow-btn" onClick={() => go(block + 1)} disabled={block === last} aria-label="Next block">►</button>
-            </div>
-            <div className="throttle" aria-hidden="true"><span style={{ width: `${throttle}%` }} /></div>
           </div>
 
           <FlightStick onMove={(x, y) => { flightRef.current.stick = { x, y }; }} />
@@ -594,6 +598,7 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
               <button type="button" className="guard-cover" onClick={() => setArmed((a) => !a)} aria-label={armed ? 'Close abort guard' : 'Open abort guard'} aria-expanded={armed} />
               <button type="button" className="abort" disabled={!armed} onClick={() => { addLog('ABORT — returning to space'); onBack(); }}>ABORT</button>
             </div>
+          </div>
           </div>
         </div>
 
