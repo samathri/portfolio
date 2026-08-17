@@ -203,7 +203,7 @@ export default function StoryScene({ section, quality = 'medium', reducedMotion 
     };
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
 
-    let frame; let lastTime = performance.now(); let smooth = 0; let bank = 0;
+    let frame; let lastTime = performance.now(); let smooth = 0; let bank = 0; let pitch = 0;
     const animate = (now) => {
       const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
       const d = dataRef.current;
@@ -248,18 +248,21 @@ export default function StoryScene({ section, quality = 'medium', reducedMotion 
       // Entry rumble on the final descent, plus a kick while boosting.
       const rumbleAmt = clampN(rate * 30, 0, 1) * ((p > 0.7 && rate > 0.004) ? 0.12 : 0) + fl.boost * 0.1;
       const rumble = d.reducedMotion ? 0 : Math.sin(now * 0.055) * rumbleAmt;
-      // The BANK lever rolls the ship into a turn and swings the view across
-      // (eased, so it leans in and settles back like a real aircraft).
-      bank += ((fl.turn || 0) - bank) * 0.09;
+      // The flight stick steers the ship through its full gimbal: sideways
+      // deflection yaws and banks the view, fore/aft pitches the nose. Both
+      // axes ease in and settle back to level, like real fly-by-wire.
+      const stick = fl.stick || { x: 0, y: 0 };
+      bank += ((stick.x || 0) - bank) * 0.09;
+      pitch += ((stick.y || 0) - pitch) * 0.09;
       const bob = Math.sin(t * 0.25) * 0.08;
       camera.position.x = bob * 0.5 + rumble * 0.6 + bank * 1.8;
-      camera.position.y = 0.2 + bob + rumble;
+      camera.position.y = 0.2 + bob + rumble + pitch * 0.8; // pull back = climb
       // CAM toggle widens the view; boost adds a warp-stretch FOV kick.
       const targetFov = (compact ? 72 : 60) + (fl.cam ? 9 : 0) + fl.boost * 8;
       camera.fov += (targetFov - camera.fov) * 0.08;
       camera.updateProjectionMatrix();
-      // Nose tips down as the horizon rises; banking swings the gaze sideways.
-      camera.lookAt(lerp(1.2, 0, p) - bank * 9, lerp(0.6, -2.6, p), -24);
+      // Nose follows the stick; the horizon still rises as you approach.
+      camera.lookAt(lerp(1.2, 0, p) - bank * 9, lerp(0.6, -2.6, p) + pitch * 6, -24);
       // Roll must be applied after lookAt (which resets orientation).
       camera.rotation.z += rumble * 0.02 - bank * 0.3;
 

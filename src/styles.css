@@ -682,3 +682,33 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
   .navrow .block-switches{flex:1 1 auto;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;max-width:calc(100vw - 130px);scrollbar-width:none;padding-bottom:2px}
   .navrow .block-switches::-webkit-scrollbar{display:none}
 }
+
+/* ---- Thrustmaster-style flight stick (replaces the bank lever) ---- */
+.console{grid-template-columns:minmax(0,auto) minmax(0,1fr) auto auto minmax(0,1fr) minmax(0,auto);grid-template-areas:"lside eng mid stick data rside"}
+.stick-bay{grid-area:stick;position:relative;display:grid;justify-items:center;align-content:center;gap:4px;padding:8px 12px;border:1px solid #263b4e;border-radius:10px;background:linear-gradient(180deg,#223343,#0d1826 24%,#091220);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),inset 0 -8px 16px rgba(0,0,0,.55),0 3px 5px rgba(0,0,0,.45)}
+.stick-bay:before{content:"";position:absolute;inset:4px;border:1px dashed rgba(140,175,200,.12);border-radius:7px;pointer-events:none}
+.stick-bay>b{font:700 6.5px 'DM Mono',monospace;letter-spacing:.14em;color:#8ba0ab}
+.stick-pad{position:relative;width:96px;height:96px;perspective:340px;border-radius:50%;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.stick-pad.is-dragging{cursor:grabbing}
+.stick-ring{position:absolute;inset:5px;border-radius:50%;border:2px solid color-mix(in srgb,var(--accent) 65%,transparent);box-shadow:0 0 14px color-mix(in srgb,var(--accent) 40%,transparent),inset 0 0 14px color-mix(in srgb,var(--accent) 22%,transparent);pointer-events:none}
+.stick-gimbal{position:absolute;left:50%;top:50%;width:46px;height:46px;transform:translate(-50%,-50%);border-radius:50%;background:repeating-conic-gradient(#2c3b49 0 10deg,#1a2733 10deg 20deg);box-shadow:inset 0 0 8px #000,0 2px 4px rgba(0,0,0,.5);pointer-events:none}
+.stick{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;transition:transform .32s cubic-bezier(.22,.8,.2,1);pointer-events:none}
+.stick-pad.is-dragging .stick{transition:none}
+.stick-shaft{position:absolute;left:-7px;bottom:-6px;width:14px;height:42px;border-radius:6px 6px 4px 4px;background:linear-gradient(90deg,#cfd9e2,#f2f7fa 45%,#aebbc6);box-shadow:0 2px 5px rgba(0,0,0,.5)}
+.stick-shaft i{position:absolute;left:0;right:0;height:5px;background:#1a2430;border-radius:2px}
+.stick-shaft i:first-child{top:11px}.stick-shaft i:last-child{top:22px}
+.stick-grip{position:absolute;left:-17px;bottom:30px;width:34px;height:36px;border-radius:15px 15px 9px 9px;background:linear-gradient(90deg,#d7e0e8,#f4f8fb 40%,#b6c3ce);box-shadow:0 3px 7px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.5)}
+.grip-face{position:absolute;left:5px;top:4px;width:24px;height:24px;border-radius:11px;background:linear-gradient(180deg,#232f3b,#101923);box-shadow:inset 0 1px 2px rgba(255,255,255,.08)}
+.hat{position:absolute;left:50%;top:7px;width:10px;height:10px;transform:translateX(-50%);background:#0c141d;box-shadow:0 0 0 1.6px #33424f;clip-path:polygon(32% 0,68% 0,68% 32%,100% 32%,100% 68%,68% 68%,68% 100%,32% 100%,32% 68%,0 68%,0 32%,32% 32%)}
+.head-btn{position:absolute;top:6px;width:6px;height:6px;border-radius:50%;background:#151f2a;box-shadow:inset 0 0 2px #000,0 0 0 1.4px #2c3a48}
+.head-btn.l{left:4px}.head-btn.r{right:4px}
+.orange-btn{position:absolute;top:19px;width:6.5px;height:6.5px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffb066,#e0731d);box-shadow:0 0 5px #e0731d99}
+.orange-btn.l{left:4px}.orange-btn.r{right:4px}
+.grip-accent{position:absolute;left:50%;top:13px;width:13px;height:9px;transform:translateX(-50%);border:1.6px solid var(--accent);border-top:0;border-radius:0 0 11px 11px;box-shadow:0 0 6px color-mix(in srgb,var(--accent) 55%,transparent)}
+.trigger{position:absolute;left:-4px;top:15px;width:6px;height:12px;border-radius:3px;background:radial-gradient(circle at 35% 30%,#ff7a7a,#c22f2f);box-shadow:0 0 5px #e3454566}
+.stick-base-keys{display:flex;gap:4px}
+.stick-base-keys i{width:13px;height:8px;border-radius:2px;background:color-mix(in srgb,var(--accent) 42%,#0a1a26);box-shadow:0 0 6px color-mix(in srgb,var(--accent) 35%,transparent),inset 0 1px 0 rgba(255,255,255,.22)}
+@media(max-width:1200px){.stick-pad{width:84px;height:84px}}
+@media(max-width:900px){.stick-bay{display:none}}
+@media(max-width:760px){.stick-bay{display:none}}
+@media(max-height:700px){.stick-pad{width:80px;height:80px}.stick-grip{bottom:26px}}

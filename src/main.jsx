@@ -321,33 +321,48 @@ function Knob({ value, onChange, label }) {
   );
 }
 
-// An auto-centering bank lever: drag it left/right to roll the ship into a
-// turn; it springs back to center when released, like a flight stick axis.
-function BalanceLever({ onTurn }) {
-  const trackRef = useRef(null);
-  const [pos, setPos] = useState(0);
+// A Thrustmaster-style flight stick: drag anywhere on the pad to tilt the
+// grip through its full 360° gimbal — the ship pitches, yaws and banks with
+// it — and it snaps back to center when released, like the real hardware.
+function FlightStick({ onMove }) {
+  const padRef = useRef(null);
+  const [vec, setVec] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
-  const set = (value) => { setPos(value); onTurn(value); };
-  const fromX = (clientX) => {
-    const rect = trackRef.current.getBoundingClientRect();
-    set(clamp(((clientX - rect.left) / rect.width) * 2 - 1, -1, 1));
+  const set = (x, y) => { setVec({ x, y }); onMove(x, y); };
+  const fromEvent = (event) => {
+    const rect = padRef.current.getBoundingClientRect();
+    const dx = (event.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
+    const dy = (event.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
+    const len = Math.hypot(dx, dy);
+    const scale = len > 1 ? 1 / len : 1; // clamp to the gimbal circle
+    set(clamp(dx * scale, -1, 1), clamp(dy * scale, -1, 1));
   };
-  const onDown = (event) => { setDragging(true); try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch { /* best effort */ } fromX(event.clientX); };
-  const onMove = (event) => { if (dragging) fromX(event.clientX); };
-  const release = () => { setDragging(false); set(0); };
+  const onDown = (event) => { setDragging(true); try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch { /* best effort */ } fromEvent(event); };
+  const onDrag = (event) => { if (dragging) fromEvent(event); };
+  const release = () => { setDragging(false); set(0, 0); };
   return (
-    <div
-      className={`balance ${dragging ? 'is-dragging' : ''}`}
-      onPointerDown={onDown} onPointerMove={onMove} onPointerUp={release} onPointerCancel={release}
-      role="slider" aria-label="Bank left or right" aria-valuemin={-100} aria-valuemax={100} aria-valuenow={Math.round(pos * 100)} tabIndex={-1}
-    >
-      <span className="balance-cap">L</span>
-      <div className="balance-track" ref={trackRef}>
-        <i className="balance-center" />
-        <div className="balance-handle" style={{ left: `${50 + pos * 50}%` }}><i /><i /></div>
+    <div className="stick-bay">
+      <div
+        className={`stick-pad ${dragging ? 'is-dragging' : ''}`} ref={padRef}
+        onPointerDown={onDown} onPointerMove={onDrag} onPointerUp={release} onPointerCancel={release}
+        role="application" aria-label="Flight stick — drag to steer the ship in any direction"
+      >
+        <i className="stick-ring" aria-hidden="true" />
+        <i className="stick-gimbal" aria-hidden="true" />
+        <div className="stick" style={{ transform: `rotateX(${-vec.y * 26}deg) rotateY(${vec.x * 26}deg)` }} aria-hidden="true">
+          <div className="stick-shaft"><i /><i /></div>
+          <div className="stick-grip">
+            <i className="grip-face" />
+            <i className="hat" />
+            <i className="head-btn l" /><i className="head-btn r" />
+            <i className="orange-btn l" /><i className="orange-btn r" />
+            <i className="grip-accent" />
+            <i className="trigger" />
+          </div>
+        </div>
       </div>
-      <span className="balance-cap">R</span>
-      <b>BANK</b>
+      <div className="stick-base-keys" aria-hidden="true"><i /><i /><i /><i /></div>
+      <b>FLIGHT STICK</b>
     </div>
   );
 }
@@ -383,7 +398,7 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
   // Flight systems: GEAR sets cruise speed, BOOST fires a burst — both are
   // read live by the 3D scene each frame.
   const [gear, setGear] = useState(2);
-  const flightRef = useRef({ gear: 2, boost: 0, cam: false, lights: 0.8, turn: 0 });
+  const flightRef = useRef({ gear: 2, boost: 0, cam: false, lights: 0.8, stick: { x: 0, y: 0 } });
   useEffect(() => { flightRef.current.gear = gear; }, [gear]);
   useEffect(() => { flightRef.current.cam = sys.cam; }, [sys.cam]);
   useEffect(() => { flightRef.current.lights = lights; }, [lights]);
@@ -546,8 +561,9 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
               <button className="arrow-btn" onClick={() => go(block + 1)} disabled={block === last} aria-label="Next block">►</button>
             </div>
             <div className="throttle" aria-hidden="true"><span style={{ width: `${throttle}%` }} /></div>
-            <BalanceLever onTurn={(value) => { flightRef.current.turn = value; }} />
           </div>
+
+          <FlightStick onMove={(x, y) => { flightRef.current.stick = { x, y }; }} />
 
           <div className="console-data">
             <b>FLIGHT DATA</b>
