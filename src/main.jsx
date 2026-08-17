@@ -352,9 +352,10 @@ function FlightStick({ onMove }) {
         <span className={`pad-arrow left ${vec.x < -0.2 ? 'on' : ''}`} aria-hidden="true">◄</span>
         <span className={`pad-arrow right ${vec.x > 0.2 ? 'on' : ''}`} aria-hidden="true">►</span>
         <div className="stick2-boot" aria-hidden="true"><i /><i /><i /></div>
-        <div className="stick2" style={{ transform: `translate(${(vec.x * 16).toFixed(1)}px, ${(vec.y * 13).toFixed(1)}px) rotate(${(vec.x * 9).toFixed(1)}deg)` }} aria-hidden="true">
-          {/* Push forward: knob shrinks away. Pull back: knob comes toward you, bigger. */}
-          <div className="stick2-handle" style={{ transform: `scale(${(1 + vec.y * 0.18).toFixed(3)})` }}><em className="stick2-btn" /><i /><i /><i /><span className="stick2-led" /></div>
+        {/* The whole stick pivots around the boot like a real gimbal: lean for
+            left/right, compress away / extend toward you for push/pull. */}
+        <div className="stick2" style={{ transform: `rotate(${(vec.x * 22).toFixed(1)}deg) scaleY(${(1 + vec.y * 0.18).toFixed(3)})` }} aria-hidden="true">
+          <div className="stick2-handle" style={{ transform: `scale(${(1 + vec.y * 0.15).toFixed(3)})` }}><em className="stick2-btn" /><i /><i /><i /><span className="stick2-led" /></div>
           <div className="stick2-shaft" />
         </div>
       </div>
