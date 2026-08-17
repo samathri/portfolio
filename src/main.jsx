@@ -263,6 +263,43 @@ function buildPanels(section, ctx) {
   }
 }
 
+// A draggable throttle lever, like a flight-sim quadrant: grab the handle and
+// slide it through the gear detents (click the track or use arrow keys too).
+function ThrottleLever({ gear, onChange }) {
+  const trackRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const setFromY = (clientY) => {
+    const rect = trackRef.current.getBoundingClientRect();
+    const ratio = clamp((rect.bottom - clientY) / rect.height, 0, 1);
+    const next = 1 + Math.round(ratio * 3);
+    if (next !== gear) onChange(next);
+  };
+  const onDown = (event) => { setDragging(true); event.currentTarget.setPointerCapture?.(event.pointerId); setFromY(event.clientY); };
+  const onMove = (event) => { if (dragging) setFromY(event.clientY); };
+  const stop = () => setDragging(false);
+  const pos = ((gear - 1) / 3) * 100;
+  return (
+    <div
+      className={`throttle-lever ${dragging ? 'is-dragging' : ''}`}
+      onPointerDown={onDown} onPointerMove={onMove} onPointerUp={stop} onPointerCancel={stop}
+      role="slider" aria-label="Throttle gear" aria-valuemin={1} aria-valuemax={4} aria-valuenow={gear}
+      aria-valuetext={`Gear ${gear}`} tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowUp' || event.key === 'ArrowRight') { event.preventDefault(); event.stopPropagation(); onChange(Math.min(4, gear + 1)); }
+        if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') { event.preventDefault(); event.stopPropagation(); onChange(Math.max(1, gear - 1)); }
+      }}
+    >
+      <div className="tl-track" ref={trackRef}>
+        <i className="tl-fill" style={{ height: `${pos}%` }} />
+        {[0, 1, 2, 3].map((notch) => <i key={notch} className="tl-notch" style={{ bottom: `${(notch / 3) * 100}%` }} />)}
+        <div className="tl-handle" style={{ bottom: `${pos}%` }}><i /><i /><i /></div>
+      </div>
+      <div className="tl-ticks">{[4, 3, 2, 1].map((g) => <span key={g} className={g <= gear ? 'lit' : ''}>{g}</span>)}</div>
+      <b>GEAR</b>
+    </div>
+  );
+}
+
 function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, reducedMotion, formState, onSubmit }) {
   const progressRef = useRef(0);
   const lockRef = useRef(false);
@@ -440,14 +477,7 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
           <div className="console-side right">
             <div className="right-top">
               <div className="gauge" style={{ '--v': throttle }} aria-hidden="true"><b>THR</b></div>
-              <div className="gear" role="group" aria-label="Flight gear — sets cruise speed">
-                <b>GEAR</b>
-                <div className="gear-slots">
-                  {[4, 3, 2, 1].map((g) => (
-                    <button key={g} className={gear === g ? 'active' : ''} onClick={() => { setGear(g); addLog(`GEAR ${g} engaged — ${['slow cruise', 'standard', 'fast', 'overdrive'][g - 1]}`); }} aria-pressed={gear === g}>{g}</button>
-                  ))}
-                </div>
-              </div>
+              <ThrottleLever gear={gear} onChange={(g) => { setGear(g); addLog(`GEAR ${g} engaged — ${['slow cruise', 'standard', 'fast', 'overdrive'][g - 1]}`); }} />
             </div>
             <div className="switch-row">
               <button type="button" className={`toggle ${sys.map ? 'on' : ''}`} onClick={() => flip('map')} aria-pressed={sys.map} title="Star map"><i /><b>MAP</b></button>
