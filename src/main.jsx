@@ -523,7 +523,11 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
 
         <div className="console">
           <div className="console-mid">
-            <div className="console-screen"><small>BLOCK {String(block + 1).padStart(2, '0')} / {String(panels.length).padStart(2, '0')}</small><strong>{panel.dot}</strong><em className="alt-readout">{flightPhase} · {km.toLocaleString('en-US')} KM</em></div>
+            <div className="console-screen">
+              <small><span className="cs-word">BLOCK </span>{String(block + 1).padStart(2, '0')}/{String(panels.length).padStart(2, '0')}</small>
+              <strong>{panel.dot}</strong>
+              <em className="alt-readout"><span className="cs-phase">{flightPhase} · </span>{km.toLocaleString('en-US')} KM</em>
+            </div>
             <div className="navrow">
               <button className="arrow-btn" onClick={() => go(block - 1)} disabled={block === 0} aria-label="Previous block">◄</button>
               <div className="block-switches">
