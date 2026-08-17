@@ -203,7 +203,7 @@ export default function StoryScene({ section, quality = 'medium', reducedMotion 
     };
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
 
-    let frame; let lastTime = performance.now(); let smooth = 0;
+    let frame; let lastTime = performance.now(); let smooth = 0; let bank = 0;
     const animate = (now) => {
       const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
       const d = dataRef.current;
@@ -239,24 +239,29 @@ export default function StoryScene({ section, quality = 'medium', reducedMotion 
       atmoMat.opacity = lerp(0.08, 0.34, p);
       limbMat.opacity = lerp(0.22, 0.5, p);
       ringMat.opacity = 0.24 * (1 - clampN((p - 0.55) / 0.3, 0, 1));
-      // Space dims as the atmosphere takes over.
-      starMat.opacity = lerp(0.9, 0.35, p);
-      star2Mat.opacity = lerp(0.6, 0.2, p);
-      spiralMat.opacity = lerp(0.5, 0.12, p);
+      // Space dims as the atmosphere takes over; the LIGHTS knob scales it.
+      const lightsLevel = 0.25 + 0.75 * (fl.lights ?? 0.8);
+      starMat.opacity = lerp(0.9, 0.35, p) * lightsLevel;
+      star2Mat.opacity = lerp(0.6, 0.2, p) * lightsLevel;
+      spiralMat.opacity = lerp(0.5, 0.12, p) * lightsLevel;
 
       // Entry rumble on the final descent, plus a kick while boosting.
       const rumbleAmt = clampN(rate * 30, 0, 1) * ((p > 0.7 && rate > 0.004) ? 0.12 : 0) + fl.boost * 0.1;
       const rumble = d.reducedMotion ? 0 : Math.sin(now * 0.055) * rumbleAmt;
+      // The BANK lever rolls the ship into a turn and swings the view across
+      // (eased, so it leans in and settles back like a real aircraft).
+      bank += ((fl.turn || 0) - bank) * 0.09;
       const bob = Math.sin(t * 0.25) * 0.08;
-      camera.position.x = bob * 0.5 + rumble * 0.6;
+      camera.position.x = bob * 0.5 + rumble * 0.6 + bank * 1.8;
       camera.position.y = 0.2 + bob + rumble;
-      camera.rotation.z = rumble * 0.02;
       // CAM toggle widens the view; boost adds a warp-stretch FOV kick.
       const targetFov = (compact ? 72 : 60) + (fl.cam ? 9 : 0) + fl.boost * 8;
       camera.fov += (targetFov - camera.fov) * 0.08;
       camera.updateProjectionMatrix();
-      // Nose tips down as the horizon rises to meet you.
-      camera.lookAt(lerp(1.2, 0, p), lerp(0.6, -2.6, p), -24);
+      // Nose tips down as the horizon rises; banking swings the gaze sideways.
+      camera.lookAt(lerp(1.2, 0, p) - bank * 9, lerp(0.6, -2.6, p), -24);
+      // Roll must be applied after lookAt (which resets orientation).
+      camera.rotation.z += rumble * 0.02 - bank * 0.3;
 
       renderer.render(scene, camera);
       frame = requestAnimationFrame(animate);

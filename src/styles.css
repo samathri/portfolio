@@ -621,3 +621,64 @@ a.channel:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow
   .block-switches{max-width:none}
 }
 @media(max-height:700px){.eq{height:22px}.console-eng,.console-data{gap:5px;padding:8px 12px}}
+
+/* ---- Console v4: merged nav row, knob, bank lever, keypad, abort guard ---- */
+/* Radar + flight log must accept clicks (the frame disables pointer events) */
+.radar,.radar>button,.flight-log{pointer-events:auto}
+
+.console{grid-template-columns:minmax(0,auto) minmax(0,1fr) auto minmax(0,1fr) minmax(0,auto);grid-template-areas:"lside eng mid data rside"}
+.navrow{display:flex;align-items:center;gap:10px}
+.arrow-btn{width:44px;height:44px;border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);border-radius:10px;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 20%,#0d1b2a),#060e18);color:var(--accent);font-size:16px;cursor:pointer;transition:.15s;box-shadow:inset 0 2px 0 rgba(255,255,255,.09),inset 0 -6px 10px rgba(0,0,0,.5),0 3px 0 rgba(0,0,0,.4);text-shadow:0 0 10px color-mix(in srgb,var(--accent) 70%,transparent)}
+.arrow-btn:hover:not(:disabled){background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 34%,#0d1b2a),#08131f)}
+.arrow-btn:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 2px 0 rgba(255,255,255,.09),inset 0 -3px 8px rgba(0,0,0,.5),0 1px 0 rgba(0,0,0,.4)}
+.arrow-btn:disabled{opacity:.3;cursor:default}
+
+.eng-row{display:flex;align-items:center;gap:16px}
+.knob{position:relative;display:grid;justify-items:center;gap:4px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.knob:active{cursor:grabbing}
+.knob:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.knob-face{width:34px;height:34px;border-radius:50%;border:1px solid #3d5266;background:radial-gradient(circle at 36% 30%,#3b5064,#141f2a 70%);box-shadow:0 3px 6px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.15);display:grid;place-items:center;transition:transform .08s}
+.knob-face i{width:2.5px;height:11px;border-radius:2px;background:var(--accent);box-shadow:0 0 6px var(--accent);transform:translateY(-8px)}
+.knob>b{font:700 6.5px 'DM Mono',monospace;letter-spacing:.14em;color:#8ba0ab}
+
+.balance{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;width:min(280px,90%);position:relative;padding-bottom:10px;touch-action:none;user-select:none;-webkit-user-select:none}
+.balance-cap{font:700 8px 'DM Mono',monospace;color:#8ba0ab}
+.balance-track{position:relative;height:12px;border-radius:7px;background:linear-gradient(180deg,#04090f,#0d1824);box-shadow:inset 0 0 8px #000,0 0 0 1px #1e3242;cursor:grab}
+.balance.is-dragging .balance-track{cursor:grabbing}
+.balance-center{position:absolute;left:50%;top:2px;bottom:2px;width:1.5px;background:rgba(140,175,200,.4);transform:translateX(-50%)}
+.balance-handle{position:absolute;top:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:6px;border:1px solid #4d6579;background:linear-gradient(180deg,#41586c,#15202b);box-shadow:0 3px 7px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.18);display:flex;gap:3px;align-items:center;justify-content:center;transition:left .35s cubic-bezier(.22,.8,.2,1)}
+.balance.is-dragging .balance-handle{transition:none;box-shadow:0 3px 10px rgba(0,0,0,.7),0 0 12px color-mix(in srgb,var(--accent) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.18)}
+.balance-handle i{width:2px;height:12px;border-radius:1px;background:#0a141d}
+.balance>b{position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);font:700 6.5px 'DM Mono',monospace;letter-spacing:.16em;color:#8ba0ab}
+
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:100%;margin-top:2px}
+.keypad button{display:grid;justify-items:center;gap:3px;padding:6px 4px;border:1px solid rgba(120,160,185,.22);border-radius:5px;background:linear-gradient(180deg,#18293a,#0a141f);color:#7f95a1;cursor:pointer;font:700 7px 'DM Mono',monospace;letter-spacing:.08em;transition:.15s;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 0 rgba(0,0,0,.35)}
+.keypad button:active{transform:translateY(1px)}
+.keypad button i{width:14px;height:4px;border-radius:2px;background:#2a3b47;transition:.15s}
+.keypad button.lit{color:#eaf6ff;border-color:color-mix(in srgb,var(--key) 55%,transparent)}
+.keypad button.lit i{background:var(--key);box-shadow:0 0 8px var(--key)}
+
+.guard{position:relative;display:grid;justify-items:stretch;margin-top:2px}
+.abort{padding:9px 12px;border:1px solid #ff6b6b99;border-radius:6px;background:linear-gradient(180deg,#4a151d,#1c0709);color:#ffb3b3;font:800 9px 'DM Mono',monospace;letter-spacing:.14em;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -5px 10px rgba(0,0,0,.5)}
+.abort:disabled{opacity:.45;cursor:not-allowed}
+.abort:not(:disabled){animation:ledBlink 1.2s infinite;box-shadow:0 0 16px #ff6b6b55,inset 0 1px 0 rgba(255,255,255,.08)}
+.guard-cover{position:absolute;inset:-3px -3px auto;height:calc(100% + 6px);border:1px solid #ffcf4b66;border-radius:7px;background:repeating-linear-gradient(135deg,#5c4a12cc 0 8px,#2c230accc 8px 16px);background:repeating-linear-gradient(135deg,rgba(92,74,18,.92) 0 8px,rgba(44,35,10,.92) 8px 16px);cursor:pointer;transform-origin:top center;transition:transform .3s cubic-bezier(.22,.8,.2,1);z-index:2}
+.guard-cover:after{content:"COVER";position:absolute;inset:0;display:grid;place-items:center;font:800 7px 'DM Mono',monospace;letter-spacing:.2em;color:#ffe9a8}
+.guard.is-open .guard-cover{transform:rotateX(112deg)}
+.guard.is-open .guard-cover:after{content:"ARMED"}
+
+@media(max-width:900px){.eng-row{gap:10px}}
+@media(max-width:760px){
+  .console{grid-template-columns:1fr;grid-template-areas:"mid"}
+  .navrow{width:100%;justify-content:center}
+  .balance{width:min(320px,96%)}
+}
+@media(max-height:700px){.knob-face{width:28px;height:28px}.keypad button{padding:4px 3px}.balance{padding-bottom:8px}}
+
+/* Mobile navrow: arrows stay fixed, block switches scroll between them */
+@media(max-width:760px){
+  .navrow{gap:8px}
+  .navrow .arrow-btn{flex:0 0 auto;width:40px;height:40px}
+  .navrow .block-switches{flex:1 1 auto;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;max-width:calc(100vw - 130px);scrollbar-width:none;padding-bottom:2px}
+  .navrow .block-switches::-webkit-scrollbar{display:none}
+}

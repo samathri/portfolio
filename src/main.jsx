@@ -300,6 +300,64 @@ function ThrottleLever({ gear, onChange }) {
   );
 }
 
+// A rotary knob: drag up/down (or arrow keys) to turn it through 270°.
+function Knob({ value, onChange, label }) {
+  const dragRef = useRef(null);
+  const onDown = (event) => { dragRef.current = { y: event.clientY, v: value }; try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch { /* best effort */ } };
+  const onMove = (event) => { if (dragRef.current) onChange(clamp(dragRef.current.v + (dragRef.current.y - event.clientY) / 110, 0, 1)); };
+  const stop = () => { dragRef.current = null; };
+  return (
+    <div
+      className="knob" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={stop} onPointerCancel={stop}
+      role="slider" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(value * 100)} tabIndex={0}
+      onKeyDown={(event) => {
+        if (['ArrowUp', 'ArrowRight'].includes(event.key)) { event.preventDefault(); event.stopPropagation(); onChange(Math.min(1, value + 0.1)); }
+        if (['ArrowDown', 'ArrowLeft'].includes(event.key)) { event.preventDefault(); event.stopPropagation(); onChange(Math.max(0, value - 0.1)); }
+      }}
+    >
+      <div className="knob-face" style={{ transform: `rotate(${-135 + value * 270}deg)` }}><i /></div>
+      <b>{label}</b>
+    </div>
+  );
+}
+
+// An auto-centering bank lever: drag it left/right to roll the ship into a
+// turn; it springs back to center when released, like a flight stick axis.
+function BalanceLever({ onTurn }) {
+  const trackRef = useRef(null);
+  const [pos, setPos] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const set = (value) => { setPos(value); onTurn(value); };
+  const fromX = (clientX) => {
+    const rect = trackRef.current.getBoundingClientRect();
+    set(clamp(((clientX - rect.left) / rect.width) * 2 - 1, -1, 1));
+  };
+  const onDown = (event) => { setDragging(true); try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch { /* best effort */ } fromX(event.clientX); };
+  const onMove = (event) => { if (dragging) fromX(event.clientX); };
+  const release = () => { setDragging(false); set(0); };
+  return (
+    <div
+      className={`balance ${dragging ? 'is-dragging' : ''}`}
+      onPointerDown={onDown} onPointerMove={onMove} onPointerUp={release} onPointerCancel={release}
+      role="slider" aria-label="Bank left or right" aria-valuemin={-100} aria-valuemax={100} aria-valuenow={Math.round(pos * 100)} tabIndex={-1}
+    >
+      <span className="balance-cap">L</span>
+      <div className="balance-track" ref={trackRef}>
+        <i className="balance-center" />
+        <div className="balance-handle" style={{ left: `${50 + pos * 50}%` }}><i /><i /></div>
+      </div>
+      <span className="balance-cap">R</span>
+      <b>BANK</b>
+    </div>
+  );
+}
+
+// A bank of little system keys, each with its own indicator colour.
+const KEYPAD = [
+  { id: 'STB', color: '#5dffc2' }, { id: 'DMP', color: '#ffcf4b' }, { id: 'NAV', color: '#61e7ff' },
+  { id: 'SCN', color: '#ff78d1' }, { id: 'AGC', color: '#b8ffe6' }, { id: 'HYD', color: '#ff9b63' },
+];
+
 function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, reducedMotion, formState, onSubmit }) {
   const progressRef = useRef(0);
   const lockRef = useRef(false);
@@ -317,14 +375,18 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
   const [dir, setDir] = useState('next');
   const [sys, setSys] = useState({ cam: false, grid: true, map: true, log: false, auto: false });
   const [fuel, setFuel] = useState(92);
+  const [lights, setLights] = useState(0.8);
+  const [keys, setKeys] = useState({ STB: true, NAV: true });
+  const [armed, setArmed] = useState(false);
   const flip = (kkey) => setSys((state) => ({ ...state, [kkey]: !state[kkey] }));
 
   // Flight systems: GEAR sets cruise speed, BOOST fires a burst — both are
   // read live by the 3D scene each frame.
   const [gear, setGear] = useState(2);
-  const flightRef = useRef({ gear: 2, boost: 0, cam: false });
+  const flightRef = useRef({ gear: 2, boost: 0, cam: false, lights: 0.8, turn: 0 });
   useEffect(() => { flightRef.current.gear = gear; }, [gear]);
   useEffect(() => { flightRef.current.cam = sys.cam; }, [sys.cam]);
+  useEffect(() => { flightRef.current.lights = lights; }, [lights]);
 
   // Mission flight log — records what the pilot does.
   const missionStart = useRef(Date.now());
@@ -459,21 +521,47 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
             </div>
           </div>
 
-          <button className="thruster prev" onClick={() => go(block - 1)} disabled={block === 0} aria-label="Previous block"><b>◄</b><span>Prev</span></button>
+          <div className="console-eng">
+            <b>ENGINE TRACE</b>
+            <div className="eng-row">
+              <div className="eq" aria-hidden="true" style={{ '--eq': `${(1.5 / gear).toFixed(2)}s` }}>
+                <i /><i /><i /><i /><i /><i /><i />
+              </div>
+              <Knob value={lights} onChange={setLights} label="LIGHTS" />
+            </div>
+            <small>{['IDLE', 'NOMINAL', 'HIGH OUTPUT', 'REDLINE'][gear - 1]}</small>
+          </div>
 
           <div className="console-mid">
             <div className="console-screen"><small>BLOCK {String(block + 1).padStart(2, '0')} / {String(panels.length).padStart(2, '0')}</small><strong>{panel.dot}</strong><em className="alt-readout">{flightPhase} · {km.toLocaleString('en-US')} KM</em></div>
-            <div className="block-switches">
-              {panels.map((item, index) => (
-                <button key={item.key} className={index === block ? 'active' : ''} onClick={() => go(index)} title={item.dot} aria-label={item.dot} aria-current={index === block}>
-                  <i /><span>{String(index + 1).padStart(2, '0')}</span>
+            <div className="navrow">
+              <button className="arrow-btn" onClick={() => go(block - 1)} disabled={block === 0} aria-label="Previous block">◄</button>
+              <div className="block-switches">
+                {panels.map((item, index) => (
+                  <button key={item.key} className={index === block ? 'active' : ''} onClick={() => go(index)} title={item.dot} aria-label={item.dot} aria-current={index === block}>
+                    <i /><span>{String(index + 1).padStart(2, '0')}</span>
+                  </button>
+                ))}
+              </div>
+              <button className="arrow-btn" onClick={() => go(block + 1)} disabled={block === last} aria-label="Next block">►</button>
+            </div>
+            <div className="throttle" aria-hidden="true"><span style={{ width: `${throttle}%` }} /></div>
+            <BalanceLever onTurn={(value) => { flightRef.current.turn = value; }} />
+          </div>
+
+          <div className="console-data">
+            <b>FLIGHT DATA</b>
+            <div className="data-row"><span>VEL</span><em>{[12, 28, 54, 90][gear - 1]} KM/S</em></div>
+            <div className="data-row"><span>ALT</span><em>{km.toLocaleString('en-US')} KM</em></div>
+            <div className="data-row fuel"><span>FUEL</span><i><u style={{ width: `${fuel}%` }} /></i><em>{fuel}%</em></div>
+            <div className="keypad" role="group" aria-label="Ship systems">
+              {KEYPAD.map(({ id, color }) => (
+                <button key={id} className={keys[id] ? 'lit' : ''} style={{ '--key': color }} onClick={() => { setKeys((state) => ({ ...state, [id]: !state[id] })); addLog(`${id} ${keys[id] ? 'offline' : 'online'}`); }} aria-pressed={!!keys[id]}>
+                  <i />{id}
                 </button>
               ))}
             </div>
-            <div className="throttle" aria-hidden="true"><span style={{ width: `${throttle}%` }} /></div>
           </div>
-
-          <button className="thruster next" onClick={() => go(block + 1)} disabled={block === last} aria-label="Next block"><b>►</b><span>Next</span></button>
 
           <div className="console-side right">
             <div className="right-top">
@@ -484,21 +572,10 @@ function SectionOverlay({ section, initialProjectSlug, onBack, onWarp, quality, 
               <button type="button" className={`toggle ${sys.map ? 'on' : ''}`} onClick={() => flip('map')} aria-pressed={sys.map} title="Star map"><i /><b>MAP</b></button>
               <button type="button" className={`toggle ${sys.log ? 'on' : ''}`} onClick={() => flip('log')} aria-pressed={sys.log} title="Flight log"><i /><b>LOG</b></button>
             </div>
-          </div>
-
-          <div className="console-eng" aria-hidden="true">
-            <b>ENGINE TRACE</b>
-            <div className="eq" style={{ '--eq': `${(1.5 / gear).toFixed(2)}s` }}>
-              <i /><i /><i /><i /><i /><i /><i />
+            <div className={`guard ${armed ? 'is-open' : ''}`}>
+              <button type="button" className="guard-cover" onClick={() => setArmed((a) => !a)} aria-label={armed ? 'Close abort guard' : 'Open abort guard'} aria-expanded={armed} />
+              <button type="button" className="abort" disabled={!armed} onClick={() => { addLog('ABORT — returning to space'); onBack(); }}>ABORT</button>
             </div>
-            <small>{['IDLE', 'NOMINAL', 'HIGH OUTPUT', 'REDLINE'][gear - 1]}</small>
-          </div>
-
-          <div className="console-data" aria-hidden="true">
-            <b>FLIGHT DATA</b>
-            <div className="data-row"><span>VEL</span><em>{[12, 28, 54, 90][gear - 1]} KM/S</em></div>
-            <div className="data-row"><span>ALT</span><em>{km.toLocaleString('en-US')} KM</em></div>
-            <div className="data-row fuel"><span>FUEL</span><i><u style={{ width: `${fuel}%` }} /></i><em>{fuel}%</em></div>
           </div>
         </div>
 
