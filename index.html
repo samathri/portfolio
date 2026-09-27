@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Samathri Abhayapala · Night Market</title>
+  <title>Samathri Abhayapala · AI full-stack developer</title>
   <meta name="description" content="Samathri Abhayapala, AI full-stack developer and prompt code engineer in Colombo. Walk a rain-soaked neon night market: who she is, what she works with, what she has shipped, and how to reach her." />
   <meta name="theme-color" content="#06070c" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -15,40 +15,13 @@
 <body>
   <canvas id="hall" aria-hidden="true"></canvas>
   <div class="scrim" id="scrim" aria-hidden="true"></div>
-  <div class="scrim top" id="scrim-top" aria-hidden="true"></div>
   <div class="scrim bottom" id="scrim-bottom" aria-hidden="true"></div>
-  <div class="scrim side" id="scrim-side" aria-hidden="true"></div>
-
-  <header class="hud">
-    <a class="hud-id" href="#top"><span class="mark">SA</span><span class="hud-name">Samathri Abhayapala</span></a>
-  </header>
-
-  <nav class="rail" aria-label="Sections" id="rail">
-    <a href="#about" data-stop="0" style="--c:#ff3fa8"><i></i><span>About me</span></a>
-    <a href="#skills" data-stop="1" style="--c:#5fe9ff"><i></i><span>My skills</span></a>
-    <a href="#projects" data-stop="2" style="--c:#ff9a3c"><i></i><span>Projects</span></a>
-    <a href="#contact" data-stop="3" style="--c:#7cf29a"><i></i><span>Contact me</span></a>
-  </nav>
-
-  <div class="loader" id="loader">
-    <div class="loader-inner">
-      <p class="eyebrow">Colombo · after dark</p>
-      <h1>Night Market</h1>
-      <p class="loader-role">Samathri Abhayapala · AI full-stack developer</p>
-      <div class="loader-bar" aria-hidden="true"><span id="loader-fill"></span></div>
-      <button class="btn" id="enter" type="button" disabled>Lighting the lanterns…</button>
-    </div>
-  </div>
+  <div class="scrim side" id="scrim-left" aria-hidden="true"></div>
+  <div class="scrim side r" id="scrim-right" aria-hidden="true"></div>
 
   <main id="main">
-    <section class="hero" id="top">
-      <div class="hero-inner">
-        <p class="eyebrow">Night market · Colombo · open all night</p>
-        <h1>Samathri<br />Abhayapala</h1>
-        <p class="lede">AI full-stack developer · Prompt code engineer</p>
-        <p class="hint"><i></i>Scroll to walk the market</p>
-      </div>
-    </section>
+    <!-- the gate: the name is the neon sign in the alley, nothing sits over it -->
+    <section class="hero" id="top" aria-label="Samathri Abhayapala, AI full-stack developer"></section>
 
     <div class="walk" aria-hidden="true"></div>
 
@@ -70,76 +43,72 @@
 
     <div class="walk" aria-hidden="true"></div>
 
-    <!-- ===== 02 · SKILLS: the menu hangs on the noodle bar's wall ===== -->
-    <section class="page skills" id="skills" data-stop="1">
-      <div class="inner">
-        <p class="eyebrow" style="--c:#5fe9ff">02 · My skills</p>
-        <h2>What's on the menu</h2>
-        <p class="lede">Walk up to the noodle bar. The menu is on the wall.</p>
-        <div class="menu-fallback" aria-label="The menu">
-          <div class="course"><h3>Mains</h3><ul><li>PHP</li><li>HTML</li><li>CSS</li><li>JavaScript</li><li>Node.js</li><li>React</li><li>Python</li></ul></div>
-          <div class="course"><h3>Sides</h3><ul><li>MySQL</li><li>WordPress</li><li>Git</li></ul></div>
-          <div class="course"><h3>AI specials</h3><ul><li>Claude Code</li><li>ChatGPT</li></ul></div>
-          <div class="course"><h3>Design</h3><ul><li>Figma</li><li>Canva</li></ul></div>
-        </div>
-      </div>
-    </section>
+    <!-- ===== 02 · SKILLS: the noodle bar itself. MENU on the counter opens the skills as tonight's menu; ORDER at the wok cooks a dish ===== -->
+    <section class="page skills" id="skills" data-stop="1" aria-label="My skills: the noodle bar"></section>
 
     <div class="walk" aria-hidden="true"></div>
 
-    <!-- ===== 03 · PROJECTS: a walk under five lanterns, one project each ===== -->
+    <!-- ===== 03 · PROJECTS: five shops down the alley, left and right in turn; the text sits across from each shop ===== -->
     <section class="page projects" id="projects" data-stop="2">
       <div class="sticky">
         <div class="inner proj-inner">
-          <div class="proj-col">
-            <p class="eyebrow" style="--c:#ff9a3c">03 · Projects · lantern <span id="proj-count">1 of 5</span></p>
-            <div class="proj-stack">
-              <article class="proj on" data-index="0">
-                <span class="proj-no">01</span>
-                <h2>Medi-O</h2>
-                <p class="proj-kind">Secure online pharmacy</p>
-                <p class="lede">QR-verified prescriptions, secure ordering and admin panels for the pharmacy team.</p>
-                <p class="proj-stackline">PHP · MySQL · AJAX · jQuery</p>
-                <a class="btn" href="https://aquamarine-bat-868801.hostingersite.com/media-o2/" target="_blank" rel="noopener noreferrer">Open the site</a>
-              </article>
-              <article class="proj" data-index="1">
-                <span class="proj-no">02</span>
-                <h2>Hour Markers</h2>
-                <p class="proj-kind">Watch store</p>
-                <p class="lede">A collection, product pages and ordering for a watch retailer.</p>
-                <p class="proj-stackline">PHP · JavaScript</p>
-                <a class="btn" href="https://watch-verse.netlify.app/" target="_blank" rel="noopener noreferrer">Open the site</a>
-              </article>
-              <article class="proj" data-index="2">
-                <span class="proj-no">03</span>
-                <h2>Ma Cheri</h2>
-                <p class="proj-kind">Jewelry store</p>
-                <p class="lede">Listings, cart and secure checkout, fully responsive.</p>
-                <p class="proj-stackline">PHP · JavaScript</p>
-                <a class="btn" href="https://macheri.netlify.app/" target="_blank" rel="noopener noreferrer">Open the site</a>
-              </article>
-              <article class="proj" data-index="3">
-                <span class="proj-no">04</span>
-                <h2>Munasinghe International</h2>
-                <p class="proj-kind">Export business</p>
-                <p class="lede">A custom WordPress theme with SEO built in from day one.</p>
-                <p class="proj-stackline">WordPress · SEO</p>
-                <a class="btn" href="https://munasingheinternational.com/" target="_blank" rel="noopener noreferrer">Open the site</a>
-              </article>
-              <article class="proj" data-index="4">
-                <span class="proj-no">05</span>
-                <h2>Serandi</h2>
-                <p class="proj-kind">Jewelry store</p>
-                <p class="lede">Category filters and an admin panel the owner can run without help.</p>
-                <p class="proj-stackline">PHP · MySQL</p>
-                <a class="btn" href="https://sienna-gnu-559291.hostingersite.com/" target="_blank" rel="noopener noreferrer">Open the site</a>
-              </article>
+          <article class="proj on" data-index="0" data-side="right">
+            <div class="proj-text">
+              <p class="eyebrow" style="--c:#ff9a3c">03 · Projects · Shop 1 of 5</p>
+              <span class="proj-no">01</span>
+              <h2>Medi-O</h2>
+              <p class="proj-kind">Secure online pharmacy</p>
+              <p class="lede">QR-verified prescriptions, secure ordering and admin panels for the pharmacy team.</p>
+              <p class="proj-stackline">PHP · MySQL · AJAX · jQuery</p>
+              <a class="btn" href="https://aquamarine-bat-868801.hostingersite.com/media-o2/" target="_blank" rel="noopener noreferrer">Open the site</a>
             </div>
-            <ol class="proj-dots" id="proj-dots" aria-hidden="true"><li class="on"></li><li></li><li></li><li></li><li></li></ol>
-            <p class="hint small"><i></i>Keep scrolling for the next lantern</p>
-          </div>
-          <div class="lantern-col" aria-hidden="true"></div>
+          </article>
+          <article class="proj" data-index="1" data-side="left">
+            <div class="proj-text">
+              <p class="eyebrow" style="--c:#ffd166">03 · Projects · Shop 2 of 5</p>
+              <span class="proj-no" style="--c:#ffd166">02</span>
+              <h2>Hour Markers</h2>
+              <p class="proj-kind" style="--c:#ffd166">Watch store</p>
+              <p class="lede">A collection, product pages and ordering for a watch retailer.</p>
+              <p class="proj-stackline">PHP · JavaScript</p>
+              <a class="btn" style="--c:#ffd166" href="https://watch-verse.netlify.app/" target="_blank" rel="noopener noreferrer">Open the site</a>
+            </div>
+          </article>
+          <article class="proj" data-index="2" data-side="right">
+            <div class="proj-text">
+              <p class="eyebrow" style="--c:#ff3fa8">03 · Projects · Shop 3 of 5</p>
+              <span class="proj-no" style="--c:#ff3fa8">03</span>
+              <h2>Ma Cheri</h2>
+              <p class="proj-kind" style="--c:#ff3fa8">Jewelry store</p>
+              <p class="lede">Listings, cart and secure checkout, fully responsive.</p>
+              <p class="proj-stackline">PHP · JavaScript</p>
+              <a class="btn" style="--c:#ff3fa8" href="https://macheri.netlify.app/" target="_blank" rel="noopener noreferrer">Open the site</a>
+            </div>
+          </article>
+          <article class="proj" data-index="3" data-side="left">
+            <div class="proj-text">
+              <p class="eyebrow" style="--c:#7cf29a">03 · Projects · Shop 4 of 5</p>
+              <span class="proj-no" style="--c:#7cf29a">04</span>
+              <h2>Munasinghe International</h2>
+              <p class="proj-kind" style="--c:#7cf29a">Export business</p>
+              <p class="lede">A custom WordPress theme with SEO built in from day one.</p>
+              <p class="proj-stackline">WordPress · SEO</p>
+              <a class="btn" style="--c:#7cf29a" href="https://munasingheinternational.com/" target="_blank" rel="noopener noreferrer">Open the site</a>
+            </div>
+          </article>
+          <article class="proj" data-index="4" data-side="right">
+            <div class="proj-text">
+              <p class="eyebrow" style="--c:#5fe9ff">03 · Projects · Shop 5 of 5</p>
+              <span class="proj-no" style="--c:#5fe9ff">05</span>
+              <h2>Serandi</h2>
+              <p class="proj-kind" style="--c:#5fe9ff">Jewelry store</p>
+              <p class="lede">Category filters and an admin panel the owner can run without help.</p>
+              <p class="proj-stackline">PHP · MySQL</p>
+              <a class="btn" style="--c:#5fe9ff" href="https://sienna-gnu-559291.hostingersite.com/" target="_blank" rel="noopener noreferrer">Open the site</a>
+            </div>
+          </article>
         </div>
+        <ol class="proj-dots" id="proj-dots" aria-hidden="true"><li class="on"></li><li></li><li></li><li></li><li></li></ol>
       </div>
     </section>
 
@@ -149,24 +118,38 @@
     <section class="page contact" id="contact" data-stop="3">
       <div class="inner contact-inner">
         <div class="contact-col">
-        <p class="eyebrow" style="--c:#7cf29a">04 · Contact me</p>
-        <h2>Let's talk</h2>
-        <p class="lede">Full-stack and AI-assisted development, freelance or as part of a team. The quickest way is email.</p>
-        <a class="contact-big" id="email-link" href="mailto:samathri.15@gmail.com">samathri.15@gmail.com</a>
-        <ul class="contact-list">
-          <li><span>Phone</span><a id="phone-link" href="tel:+94767170438">+94 76 717 0438</a></li>
-          <li><span>LinkedIn</span><a href="https://www.linkedin.com/in/samathri-abhayapala-a1b171176" target="_blank" rel="noopener noreferrer">samathri-abhayapala</a></li>
-          <li><span>GitHub</span><a href="https://github.com/samathri" target="_blank" rel="noopener noreferrer">samathri</a></li>
-          <li><span>Location</span>Colombo, Sri Lanka</li>
-        </ul>
-        <a class="btn" id="email-btn" href="mailto:samathri.15@gmail.com?subject=Let%27s%20talk%20about%20a%20project">Email me</a>
+          <p class="eyebrow" style="--c:#7cf29a">04 · Contact me</p>
+          <h2>Let's talk</h2>
+          <p class="lede">Full-stack and AI-assisted development, freelance or as part of a team. The quickest way is email.</p>
+          <a class="contact-big" id="email-link" href="mailto:samathri.15@gmail.com">samathri.15@gmail.com</a>
+          <ul class="contact-list">
+            <li><span>Phone</span><a id="phone-link" href="tel:+94767170438">+94 76 717 0438</a></li>
+            <li><span>LinkedIn</span><a href="https://www.linkedin.com/in/samathri-abhayapala-a1b171176" target="_blank" rel="noopener noreferrer">samathri-abhayapala</a></li>
+            <li><span>GitHub</span><a href="https://github.com/samathri" target="_blank" rel="noopener noreferrer">samathri</a></li>
+            <li><span>Location</span>Colombo, Sri Lanka</li>
+          </ul>
+          <a class="btn" id="email-btn" href="mailto:samathri.15@gmail.com?subject=Let%27s%20talk%20about%20a%20project">Email me</a>
         </div>
         <div class="booth-col" aria-hidden="true"></div>
       </div>
     </section>
-
-    <footer class="foot">Built in code with Three.js, no build step. <a href="#top">Back to the gate</a></footer>
   </main>
+
+  <!-- the noodle bar's controls: a hotspot pinned to the wok, and the order pad -->
+  <div class="spots" id="spots">
+    <button class="spot" id="spot-order" type="button" aria-label="Order noodles: my skills, cooked to order"><i><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 4.5 6 6 6 11a6 6 0 0 1-12 0c0-2.5 1.2-4 2.5-5.2 0 2.2 1 3.5 2.5 3.7C11 8 11 5 12 2z" /></svg></i><span>Order noodles · my skills</span></button>
+  </div>
+  <div class="ticket" id="ticket" role="dialog" aria-label="Order noodles: my skills as four dishes">
+    <button class="paper-close" id="ticket-close" type="button" aria-label="Close the order pad">&times;</button>
+    <p class="eyebrow">Order pad · my skills, cooked to order</p>
+    <h3>What are you having?</h3>
+    <div class="dishes" id="dishes"></div>
+    <div class="ticket-status">
+      <span class="ticket-bar" aria-hidden="true"><i id="ticket-fill"></i></span>
+      <b id="ticket-text" aria-live="polite">Pick a dish. The ingredients are the skills.</b>
+      <button class="ticket-again" id="ticket-again" type="button">Order another</button>
+    </div>
+  </div>
 
   <script type="module" src="main.js"></script>
 </body>

@@ -1,8 +1,10 @@
-// Night Market: the alley is fixed behind the page. The page itself is ordinary sections that
-// scroll; their position on the page drives the camera walk, and a dark scrim fades in behind
-// each section so the text stays readable over the neon.
+// Night Market: the alley is fixed behind the page. The page itself is ordinary sections. Every
+// section is two scrolls away: the first walks the path (the alley, no text), the second arrives at
+// the stall. On a desktop a wheel notch, key or swipe moves one stop; on a phone the page snaps stop
+// by stop. The scroll position drives the camera walk, dark scrims fade in behind each section, and
+// the content rises into place when you arrive.
 import * as THREE from 'three';
-import { buildScene, STOPS, LANTERNS } from './scene.js';
+import { buildScene, STOPS, SHOPS, shopView, COURSES } from './scene.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -19,10 +21,27 @@ function kfv(p, keys, out) {
   return out.set(last[0], last[1], last[2]);
 }
 
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 await Promise.race([
   Promise.all(['700 40px "Barlow Condensed"', '800 40px "Barlow Condensed"'].map((f) => document.fonts.load(f))),
   new Promise((r) => { setTimeout(r, 1800); }),
 ]).catch(() => {});
+
+/* ---------- motion: headings rise word by word, everything else follows in order ---------- */
+$$('.page h2').forEach((h) => {
+  const words = h.textContent.trim().split(/\s+/);
+  h.setAttribute('aria-label', words.join(' ')); h.textContent = '';
+  words.forEach((w, i) => {
+    const s = document.createElement('span'); s.className = 'w'; s.setAttribute('aria-hidden', 'true');
+    const inner = document.createElement('i'); inner.textContent = w; inner.style.setProperty('--w', i);
+    s.appendChild(inner); h.appendChild(s);
+    if (i < words.length - 1) h.appendChild(document.createTextNode(' '));
+  });
+});
+$$('.page .inner:not(.proj-inner):not(.contact-inner):not(.skills-inner), .contact-col, .proj-text').forEach((box) => {
+  let n = 0;
+  [...box.children].forEach((c) => { if (c.tagName === 'H2' || c.classList.contains('booth-col')) return; c.classList.add('rv'); c.style.setProperty('--i', n); n += 1; });
+});
 
 /* ---------- renderer, scene ---------- */
 const canvas = $('#hall');
@@ -81,32 +100,55 @@ scene.add(market.group);
 /* ---------- the page drives the camera ---------- */
 const pages = $$('.page');
 const stopNames = ['about', 'skills', 'projects', 'contact'];
-const railBtns = $$('.rail a');
 const scrim = $('#scrim');
-const scrimTop = $('#scrim-top');
 const scrimBottom = $('#scrim-bottom');
-const scrimSide = $('#scrim-side');
+const scrimLeft = $('#scrim-left');
+const scrimRight = $('#scrim-right');
 const projEls = $$('.proj');
 const projDots = $$('#proj-dots li');
-const projCount = $('#proj-count');
-let projU = 0; let projW = 0; let projIdx = -1;
-let camKeys = [];   // [[p, [x,y,z]]...] for the eye and the look
+const nShops = SHOPS.length;
+const narrow = () => window.innerWidth < 900;
+let projU = 0; let projW = 0; let projIdx = -1; let lastShop = 0;
+let textRight = 0;   // eases to 1 when the project text sits on the right (the shop is on the left)
+let camKeys = [];    // [[p, [x,y,z]]...] for the eye and the look
 let lookKeys = [];
-let stopP = [0, 0, 0, 0];
-let holdP = [0, 0, 0, 0];
+const stops = [];    // scroll positions: the gate, then a path stop and a stall stop for every section and every shop
 const maxScroll = () => Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
 function layoutKeys() {
-  const ms = maxScroll(); const vh = window.innerHeight;
-  camKeys = [[0, STOPS.hero.eye]];
-  lookKeys = [[0, STOPS.hero.look]];
+  const ms = maxScroll(); const vh = window.innerHeight; const nr = narrow();
+  const hero = nr ? STOPS.heroNarrow : STOPS.hero;
+  camKeys = [[0, hero.eye]]; lookKeys = [[0, hero.look]];
+  stops.length = 0; stops.push(0);
+  let prev = { y: 0, z: hero.eye[2] };   // the last stall stop, for the path stop after it
+  const path = (y, z) => {
+    // half way along the walk: stand in the middle of the alley and look down it
+    const py = (prev.y + y) / 2; const pz = (prev.z + z) / 2; const pm = clamp01(py / ms);
+    camKeys.push([pm, [0, 1.62, pz]]); lookKeys.push([pm, [0, 1.7, pz - 6]]);
+    stops.push(Math.round(py));
+  };
   pages.forEach((el, i) => {
     const top = el.offsetTop; const h = el.offsetHeight;
     const centre = clamp01((top + h / 2 - vh / 2) / ms);
     const hold = Math.max(0.01, (h / 2 - vh * (i === 2 ? 0.5 : 0.15)) / ms);
-    stopP[i] = centre; holdP[i] = hold;
-    const s = STOPS[stopNames[i]];
-    camKeys.push([clamp01(centre - hold), s.eye], [clamp01(centre + hold), s.eye]);
-    lookKeys.push([clamp01(centre - hold), s.look], [clamp01(centre + hold), s.look]);
+    const s = (nr && STOPS[`${stopNames[i]}Narrow`]) || STOPS[stopNames[i]];
+    if (i === 2) {
+      const span = Math.max(0, h - vh);
+      path(top, shopView(SHOPS[0], nr).eye[2]);
+      camKeys.push([clamp01(centre - hold), s.eye], [clamp01(centre + hold), s.eye]);
+      lookKeys.push([clamp01(centre - hold), s.look], [clamp01(centre + hold), s.look]);
+      for (let k = 0; k < nShops; k += 1) {
+        if (k) stops.push(Math.round(top + (span * (k - 0.5)) / (nShops - 1)));   // the path between two shops
+        stops.push(Math.round(top + (span * k) / (nShops - 1)));
+      }
+      prev = { y: top + span, z: shopView(SHOPS[nShops - 1], nr).eye[2] };
+    } else {
+      const y = THREE.MathUtils.clamp(top + h / 2 - vh / 2, 0, ms);
+      path(y, s.eye[2]);
+      camKeys.push([clamp01(centre - hold), s.eye], [clamp01(centre + hold), s.eye]);
+      lookKeys.push([clamp01(centre - hold), s.look], [clamp01(centre + hold), s.look]);
+      stops.push(Math.round(y));
+      prev = { y, z: s.eye[2] };
+    }
   });
   camKeys.push([1, STOPS.contact.eye]); lookKeys.push([1, STOPS.contact.look]);
 }
@@ -114,11 +156,131 @@ let pRaw = 0;
 let p = 0;
 let lockP = false;   // the debug hook pins p while it slides the page with a transform
 const readScroll = () => { if (!lockP) pRaw = clamp01(window.scrollY / maxScroll()); };
-window.addEventListener('scroll', readScroll, { passive: true });
+
+/* ---------- one scroll, one stop (wide screens; phones snap in CSS) ---------- */
+const stepMode = () => !narrow();
+let cur = 0; let animating = false; let animId = 0; let coolUntil = 0; let wheelAcc = 0;
+function nearestStop() {
+  const y = window.scrollY; let b = 0;
+  for (let i = 1; i < stops.length; i += 1) if (Math.abs(stops[i] - y) < Math.abs(stops[b] - y)) b = i;
+  return b;
+}
+function goTo(i) {
+  layoutKeys();   // the page may have reflowed since the last measure
+  i = THREE.MathUtils.clamp(i, 0, stops.length - 1);
+  const from = window.scrollY; const to = stops[i];
+  cur = i; cancelAnimationFrame(animId);
+  if (reduced) { window.scrollTo({ top: to, behavior: 'instant' }); return; }
+  const dist = Math.abs(to - from); const vh = window.innerHeight;
+  const dur = THREE.MathUtils.clamp(500 + (dist / vh) * 300, 650, 1300);
+  const t0 = performance.now(); animating = true;
+  const tick = (now) => {
+    const t = clamp01((now - t0) / dur);
+    const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    window.scrollTo({ top: from + (to - from) * e, behavior: 'instant' });
+    if (t < 1) animId = requestAnimationFrame(tick);
+    else { animating = false; coolUntil = performance.now() + 350; wheelAcc = 0; }
+  };
+  animId = requestAnimationFrame(tick);
+}
+window.addEventListener('scroll', () => { readScroll(); if (!animating && !lockP) cur = nearestStop(); }, { passive: true });
+// one wheel notch (one click of a mouse wheel, or the same distance on a trackpad) moves one stop
+const NOTCH = 60;
+let notchDir = 0; let lastWheel = 0;
+window.addEventListener('wheel', (e) => {
+  if (!stepMode()) return;
+  e.preventDefault();
+  const now = performance.now();
+  if (animating || now < coolUntil) { wheelAcc = 0; return; }
+  const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
+  if (!dy) return;
+  const dir = dy > 0 ? 1 : -1;
+  if (dir !== notchDir || now - lastWheel > 1500) { wheelAcc = 0; notchDir = dir; }
+  lastWheel = now;
+  wheelAcc += dy;
+  if (Math.abs(wheelAcc) >= NOTCH) { wheelAcc = 0; goTo(cur + dir); }
+}, { passive: false });
+window.addEventListener('keydown', (e) => {
+  if (!stepMode() || e.altKey || e.ctrlKey || e.metaKey) return;
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  let d = 0;
+  if (e.key === 'ArrowDown' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) d = 1;
+  else if (e.key === 'ArrowUp' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) d = -1;
+  else if (e.key === 'Home') { e.preventDefault(); goTo(0); return; }
+  else if (e.key === 'End') { e.preventDefault(); goTo(stops.length - 1); return; }
+  if (!d) return;
+  e.preventDefault();
+  if (!animating) goTo(cur + d);
+});
+let touchY = null;
+window.addEventListener('touchstart', (e) => { touchY = e.touches[0].clientY; }, { passive: true });
+window.addEventListener('touchmove', (e) => { if (stepMode() && e.cancelable) e.preventDefault(); }, { passive: false });
+window.addEventListener('touchend', (e) => {
+  if (!stepMode() || touchY === null) return;
+  const dy = touchY - e.changedTouches[0].clientY; touchY = null;
+  if (Math.abs(dy) > 40 && !animating) goTo(cur + (dy > 0 ? 1 : -1));
+});
+const sectionStop = [2, 4, 6, 6 + 2 * nShops];   // about, skills, the first shop, contact: for a #hash in the address
+{
+  // snap points for phones: one per shop and one on the path between each pair
+  const sec = pages[2]; const n = 2 * (nShops - 1);
+  for (let k = 0; k <= n; k += 1) { const d = document.createElement('div'); d.className = 'proj-snap'; d.style.top = `calc((100% - 100vh) * ${k / n})`; sec.appendChild(d); }
+}
+
+/* ---------- the noodle bar's controls: a hotspot pinned to the wok, and the order pad ---------- */
+const ticket = $('#ticket');
+const spots = [{ el: $('#spot-order'), anchor: market.anchors.order }];
+const openTicket = (o) => ticket.classList.toggle('open', o);
+spots[0].el.addEventListener('click', () => openTicket(!ticket.classList.contains('open')));
+$('#ticket-close').addEventListener('click', () => openTicket(false));
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') openTicket(false); });
+const spotV = new THREE.Vector3();
+function placeSpots() {
+  const at = pages[1].classList.contains('live');
+  document.body.classList.toggle('at-stall', at);
+  if (!at) return;
+  const W = window.innerWidth; const H = window.innerHeight;
+  spots.forEach(({ el, anchor }) => {
+    let x; let y; let vis = true;
+    if (narrow()) { x = W / 2; y = H - 72; }   // a phone shows only part of the stall: the button sits along the bottom
+    else {
+      spotV.copy(anchor).project(camera); vis = spotV.z < 1;
+      x = THREE.MathUtils.clamp(((spotV.x + 1) / 2) * W, 70, W - 70); y = THREE.MathUtils.clamp(((1 - spotV.y) / 2) * H, 90, H - 110);
+    }
+    el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%)`;
+    el.classList.toggle('vis', vis);
+  });
+}
+// the order pad: four dishes, the ingredients are the skills; pick one and the cook gets to work
+const dishesEl = $('#dishes'); const fill = $('#ticket-fill'); const ticketText = $('#ticket-text'); const again = $('#ticket-again');
+const TICKET_IDLE = 'Pick a dish. The ingredients are the skills.';
+let cookingNow = false;
+const resetTicket = () => { ticket.classList.remove('cooking', 'done'); document.body.classList.remove('cooking'); $$('.dish').forEach((x) => x.classList.remove('on')); fill.style.transition = 'none'; fill.style.width = '0%'; ticketText.textContent = TICKET_IDLE; };
+COURSES.forEach((d, i) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'dish'; b.style.setProperty('--c', d.css);
+  const name = document.createElement('b'); name.textContent = d.name;
+  const ings = document.createElement('span'); ings.className = 'ings'; d.items.forEach((it) => { const em = document.createElement('em'); em.textContent = it; ings.appendChild(em); });
+  const note = document.createElement('span'); note.className = 'note'; note.textContent = d.note;
+  b.append(name, ings, note);
+  b.addEventListener('click', () => {
+    if (cookingNow) return; cookingNow = true;
+    $$('.dish').forEach((x, j) => x.classList.toggle('on', j === i));
+    ticket.classList.add('cooking'); ticket.classList.remove('done'); document.body.classList.add('cooking');
+    ticketText.textContent = `Order in: ${d.name}. Getting the ingredients out\u2026`;
+    const total = market.cook(i, {
+      narrow: narrow(),
+      onStep: (text) => { ticketText.textContent = text; },
+      onDone: () => { cookingNow = false; ticket.classList.remove('cooking'); ticket.classList.add('done'); document.body.classList.remove('cooking'); ticketText.textContent = `Order up! ${d.name}: ${d.items.join(', ')}.`; },
+    });
+    fill.style.transition = 'none'; fill.style.width = '0%'; void fill.offsetWidth; fill.style.transition = `width ${total.toFixed(1)}s linear`; fill.style.width = '100%';
+  });
+  dishesEl.appendChild(b);
+});
+again.addEventListener('click', resetTicket);
+const leaveStall = () => { openTicket(false); if (cookingNow) { market.abortCook(); cookingNow = false; } resetTicket(); };
 
 /* ---------- hovers from the page into the alley ---------- */
-const courses = $$('.course[data-course]');
-courses.forEach((c) => { c.addEventListener('pointerenter', () => market.setHover(`course:${c.dataset.course}`)); c.addEventListener('pointerleave', () => market.setHover(null)); });
 {
   const phone = $('#phone-link');
   phone.addEventListener('pointerenter', () => market.ring(true));
@@ -126,10 +288,14 @@ courses.forEach((c) => { c.addEventListener('pointerenter', () => market.setHove
   [$('#email-link'), $('#email-btn')].forEach((el) => { el.addEventListener('pointerenter', () => market.ring(true)); el.addEventListener('pointerleave', () => market.ring(false)); });
 }
 
-/* ---------- pointer look-around ---------- */
+/* ---------- pointer look-around; the content drifts the other way ---------- */
 const mouse = new THREE.Vector2(0, 0);
 const mouseSmooth = new THREE.Vector2(0, 0);
-window.addEventListener('pointermove', (e) => { mouse.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1); });
+window.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'touch') return;
+  mouse.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+  document.body.style.setProperty('--mx', mouse.x.toFixed(3)); document.body.style.setProperty('--my', mouse.y.toFixed(3));
+});
 
 /* ---------- camera ---------- */
 const camPos = new THREE.Vector3();
@@ -138,23 +304,26 @@ const camPosNow = new THREE.Vector3().fromArray(STOPS.hero.eye);
 const camLookNow = new THREE.Vector3().fromArray(STOPS.hero.look);
 const fwd = new THREE.Vector3(); const right = new THREE.Vector3();
 const walkEye = new THREE.Vector3(); const walkLook = new THREE.Vector3();
+const eyeB = new THREE.Vector3(); const lookB = new THREE.Vector3();
 let nowT = 0;
 function updateCamera(dt) {
   kfv(p, camKeys, camPos);
   kfv(p, lookKeys, camLook);
   let fov = 50;
   const aspect = camera.aspect;
-  const narrow = window.innerWidth < 900;
+  const nr = narrow();
   if (aspect < 1.2) fov = THREE.MathUtils.clamp(50 * (1.2 / aspect), 50, 78);
   if (projW > 0.001) {
-    // the walk under the lanterns: hold at each one, move between them
-    const tt = projU * 4; const i0 = Math.min(3, Math.floor(tt)); const f = smooth((tt - i0 - 0.28) / 0.44);
-    const [x0, z0] = LANTERNS[i0]; const [x1, z1] = LANTERNS[Math.min(4, i0 + 1)];
-    const lx = x0 + (x1 - x0) * f; const lz = z0 + (z1 - z0) * f;
-    walkEye.set(-0.6, 1.62, lz + 2.4); walkLook.set(lx - 0.2, narrow ? 1.5 : 2.3, lz);
-    if (narrow) { walkEye.z += 0.8; }
+    // the walk from shop to shop: stand across from each one; half way, back in the middle of the alley looking down it
+    const n = nShops - 1; const tt = projU * n; const i0 = Math.min(n - 1, Math.floor(tt)); const f = smooth((tt - i0 - 0.18) / 0.64);
+    const a = shopView(SHOPS[i0], nr); const b = shopView(SHOPS[Math.min(n, i0 + 1)], nr);
+    walkEye.fromArray(a.eye).lerp(eyeB.fromArray(b.eye), f); walkLook.fromArray(a.look).lerp(lookB.fromArray(b.look), f);
+    const pathW = 4 * f * (1 - f);
+    walkEye.x *= 1 - pathW; walkLook.x *= 1 - pathW;
+    walkLook.y += (1.7 - walkLook.y) * pathW; walkLook.z += (walkEye.z - 6 - walkLook.z) * pathW;
     camPos.lerp(walkEye, projW); camLook.lerp(walkLook, projW);
   }
+  if (market.cam.w > 0.001) { camPos.lerp(market.cam.eye, market.cam.w); camLook.lerp(market.cam.look, market.cam.w); }   // an order cooking: close over the bench
   camPos.y += Math.sin(nowT * 0.6) * 0.02;
   mouseSmooth.lerp(mouse, 1 - Math.pow(0.001, dt));
   camPos.x += mouseSmooth.x * 0.2;
@@ -176,58 +345,76 @@ function resize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   layoutKeys();
+  if (stepMode() && !animating && !lockP) window.scrollTo({ top: stops[cur], behavior: 'instant' });
   readScroll();
 }
 window.addEventListener('resize', resize);
+{
+  // start at the gate, or at the section named in the address
+  const hi = stopNames.indexOf(location.hash.slice(1));
+  cur = hi >= 0 ? sectionStop[hi] : 0;
+  layoutKeys();
+  window.scrollTo({ top: stops[cur], behavior: 'instant' });
+}
 resize();
 p = pRaw;
 
 const clock = new THREE.Clock();
 let frames = 0;
 let lastError = null;
-let loaderGone = false;
+let lastHeight = 0;
 
 function step(dt, t, render = true) {
   nowT = t;
+  const sh = document.documentElement.scrollHeight;
+  if (sh !== lastHeight) { lastHeight = sh; layoutKeys(); readScroll(); }   // fonts and reflows move the stops
   p += (pRaw - p) * (1 - Math.pow(reduced ? 0.000001 : 0.003, dt));
-  // where each section sits on screen: this drives the scrims, the rail and the lantern walk
+  // where each section sits on screen: this drives the scrims, the reveals and the shop walk
   const vh = window.innerHeight;
-  const wide = window.innerWidth >= 900;
-  let radial = 0; let top = 0; let bottom = 0; let side = 0; let edge = 60;
+  const wide = !narrow();
+  let radial = 0; let bottom = 0; let left = 0; let right = 0; let edge = 60; let projVis = 0;
   pages.forEach((el, i) => {
     const r = el.getBoundingClientRect();
     const overlap = Math.min(r.bottom, vh) - Math.max(r.top, 0);
     const vis = clamp01(overlap / Math.min(vh, r.height) / 0.55);
-    railBtns[i].classList.toggle('on', vis > 0.6 && overlap > vh * 0.3);
-    if (i === 1) { if (wide) top = Math.max(top, vis); else radial = Math.max(radial, vis); }
+    if (i !== 2) { const was = el.classList.contains('live'); const now = vis > 0.6 && overlap > vh * 0.3; el.classList.toggle('live', now); if (i === 1 && was && !now) leaveStall(); }
+    if (i === 1) { /* the stall itself is the content: no scrim */ }
     else if (i === 2) {
-      projW = vis;
+      projW = vis; projVis = vis;
       projU = clamp01(-r.top / Math.max(1, r.height - vh));
-      if (wide) { side = Math.max(side, vis); edge = 58; } else bottom = Math.max(bottom, vis);
-    } else if (i === 3) { if (wide) { side = Math.max(side, vis); if (vis > 0.5) edge = 74; } else radial = Math.max(radial, vis); }
+      if (!wide) bottom = Math.max(bottom, vis);
+    } else if (i === 3) { if (wide) { left = Math.max(left, vis); if (vis > 0.5) edge = 74; } else radial = Math.max(radial, vis); }
     else radial = Math.max(radial, vis);
   });
-  // which lantern we are under
-  const tt = projU * 4; const idx = projW > 0.001 ? Math.min(4, Math.max(0, Math.round(tt))) : -1;
+  // which shop we stand at: the text only shows near a shop, not on the path between two
+  const tt = projU * (nShops - 1); const nearest = THREE.MathUtils.clamp(Math.round(tt), 0, nShops - 1);
+  const idx = projW > 0.001 && Math.abs(tt - nearest) < 0.3 ? nearest : -1;
+  if (projW > 0.001) lastShop = nearest;
   if (idx !== projIdx) {
     projIdx = idx;
     projEls.forEach((el) => el.classList.toggle('on', Number(el.dataset.index) === idx));
-    projDots.forEach((d, i) => { d.classList.toggle('on', i === idx); d.classList.toggle('done', idx >= 0 && i < idx); });
-    if (idx >= 0) projCount.textContent = `${idx + 1} of 5`;
+    projDots.forEach((d, i) => { d.classList.toggle('on', i === lastShop); d.classList.toggle('done', i < lastShop); });
     market.setActiveProject(idx);
   }
+  const wantRight = SHOPS[lastShop].side < 0 ? 1 : 0;   // the shop is on the left, so the text goes right
+  textRight += (wantRight - textRight) * (1 - Math.exp(-7 * dt));
+  const textVis = idx >= 0 ? projVis : 0;
+  if (wide && textVis > 0) { left = Math.max(left, textVis * (1 - textRight)); right = Math.max(right, textVis * textRight); if (textVis > 0.5) edge = 56; }
+  if (!wide && idx < 0) bottom = 0;
   updateCamera(dt);
+  placeSpots();
   market.setCameraZ(camera.position.z);
   market.update(t, dt);
   scrim.style.setProperty('--s', radial.toFixed(3));
-  scrimTop.style.setProperty('--s', top.toFixed(3));
   scrimBottom.style.setProperty('--s', bottom.toFixed(3));
-  scrimSide.style.setProperty('--s', side.toFixed(3));
-  scrimSide.style.setProperty('--edge', `${edge}%`);
+  scrimLeft.style.setProperty('--s', left.toFixed(3));
+  scrimRight.style.setProperty('--s', right.toFixed(3));
+  scrimLeft.style.setProperty('--edge', `${edge}%`);
+  scrimRight.style.setProperty('--edge', `${edge}%`);
   if (!render) return;
   renderer.render(scene, camera);
   frames += 1;
-  if (frames === 2) ready();
+  if (frames === 2) document.body.classList.add('in');
 }
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -235,38 +422,22 @@ function loop() {
 }
 renderer.setAnimationLoop(loop);
 
-/* ---------- loader ---------- */
-const loader = $('#loader');
-const enter = $('#enter');
-$('#loader-fill').style.width = '40%';
-function ready() {
-  $('#loader-fill').style.width = '100%';
-  enter.disabled = false;
-  enter.textContent = 'Walk in';
-}
-setTimeout(ready, 2500);
-function enterView() {
-  loader.classList.add('hidden');
-  loaderGone = true;
-}
-enter.addEventListener('click', enterView);
-window.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !enter.disabled && !loaderGone) enterView(); });
-
 // Debug hooks; nothing on the page depends on these.
 window.__nm = {
   get p() { return p; },
   get frames() { return frames; },
   get lastError() { return lastError; },
   get time() { return clock.elapsedTime; },
-  get stops() { return stopP.slice(); },
-  market, camera, scene,
+  get stops() { return stops.slice(); },
+  get cur() { return cur; },
+  market, camera, scene, goTo,
   setP(v) {
     lockP = true; window.scrollTo({ top: 0, behavior: 'instant' }); pRaw = v; p = v;
     const vs = v * maxScroll(); $('#main').style.transform = `translateY(${-vs}px)`;
     // sticky does not work under a transform: emulate it for the projects frame
     const sec = pages[2]; const st = sec.querySelector('.sticky');
     st.style.position = 'relative'; st.style.top = `${THREE.MathUtils.clamp(vs - sec.offsetTop, 0, sec.offsetHeight - window.innerHeight)}px`; camPosNow.copy(kfv(v, camKeys, camPos)); camLookNow.copy(kfv(v, lookKeys, camLook)); },
+  setStop(i) { this.setP(stops[THREE.MathUtils.clamp(i, 0, stops.length - 1)] / maxScroll()); },
   step(dt, t) { step(dt, t, false); },
   render(t) { step(0.0001, t, true); },
-  enter: enterView,
 };
