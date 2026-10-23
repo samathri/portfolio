@@ -74,15 +74,19 @@
               <a class="btn" style="--c:#ffd166" href="https://watch-verse.netlify.app/" target="_blank" rel="noopener noreferrer">Open the site</a>
             </div>
           </article>
+          <!-- shop 3 is a photo lab: the app's screens hang as prints, and the contact sheet walks through it frame by frame -->
           <article class="proj" data-index="2" data-side="right">
             <div class="proj-text">
               <p class="eyebrow" style="--c:#ff3fa8">03 · Projects · Shop 3 of 5</p>
               <span class="proj-no" style="--c:#ff3fa8">03</span>
-              <h2>Ma Cheri</h2>
-              <p class="proj-kind" style="--c:#ff3fa8">Jewelry store</p>
-              <p class="lede">Listings, cart and secure checkout, fully responsive.</p>
-              <p class="proj-stackline">PHP · JavaScript</p>
-              <a class="btn" style="--c:#ff3fa8" href="https://macheri.netlify.app/" target="_blank" rel="noopener noreferrer">Open the site</a>
+              <h2>Image Converter Pro</h2>
+              <p class="proj-kind" style="--c:#ff3fa8">Photo lab · Web app</p>
+              <p class="lede">Convert and compress images in the browser to AVIF, WEBP, JPEG or PNG at a target size. Free rolls, a Pro plan paid by card, PayPal or bank transfer, and an admin console.</p>
+              <p class="proj-stackline">React · Node.js · Express · Sharp · PostgreSQL · Vercel</p>
+              <div class="proj-actions">
+                <button class="btn" style="--c:#ff3fa8" type="button" id="lab-open">See how it works</button>
+                <a class="btn ghost" style="--c:#ff3fa8" href="https://github.com/samathri/image-converter-pro" target="_blank" rel="noopener noreferrer">View the code</a>
+              </div>
             </div>
           </article>
           <article class="proj" data-index="3" data-side="left">
@@ -135,9 +139,34 @@
     </section>
   </main>
 
-  <!-- the noodle bar's controls: a hotspot pinned to the wok, and the order pad -->
+  <!-- hotspots pinned into the alley: the wok at the noodle bar opens the order pad; the print line at the photo lab opens the contact sheet -->
   <div class="spots" id="spots">
     <button class="spot" id="spot-order" type="button" aria-label="Order noodles: my skills, cooked to order"><i><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 4.5 6 6 6 11a6 6 0 0 1-12 0c0-2.5 1.2-4 2.5-5.2 0 2.2 1 3.5 2.5 3.7C11 8 11 5 12 2z" /></svg></i><span>Order noodles · my skills</span></button>
+    <button class="spot" id="spot-lab" type="button" aria-label="See how Image Converter Pro works"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.2" /><path d="M12 3v5.8M12 15.2V21M3 12h5.8M15.2 12H21" opacity=".55" /></svg></i><span>Contact sheet · how it works</span></button>
+  </div>
+
+  <!-- the photo lab's contact sheet: Image Converter Pro, one frame at a time -->
+  <div class="lab" id="lab" role="dialog" aria-modal="true" aria-label="Image Converter Pro: how it works" hidden>
+    <div class="lab-safelight" aria-hidden="true"></div>
+    <button class="lab-close" id="lab-close" type="button" aria-label="Close the contact sheet">&times;</button>
+    <div class="lab-stage">
+      <figure class="lab-print" id="lab-print">
+        <img id="lab-img" alt="" decoding="async">
+        <figcaption><span id="lab-cap"></span><span>Image Converter Pro</span></figcaption>
+      </figure>
+      <div class="lab-text">
+        <p class="eyebrow" id="lab-step" style="--c:#ff3fa8"></p>
+        <h3 id="lab-title"></h3>
+        <p id="lab-body"></p>
+        <div class="lab-nav">
+          <button type="button" id="lab-prev" aria-label="Previous frame">&larr;</button>
+          <span id="lab-count" aria-live="polite"></span>
+          <button type="button" id="lab-next" aria-label="Next frame">&rarr;</button>
+        </div>
+        <a class="lab-link" href="https://github.com/samathri/image-converter-pro" target="_blank" rel="noopener noreferrer">View the code on GitHub &rarr;</a>
+      </div>
+    </div>
+    <div class="lab-strip" id="lab-strip" aria-label="Frames"></div>
   </div>
   <div class="ticket" id="ticket" role="dialog" aria-label="Order noodles: my skills as four dishes">
     <button class="paper-close" id="ticket-close" type="button" aria-label="Close the order pad">&times;</button>

@@ -188,7 +188,7 @@ window.addEventListener('scroll', () => { readScroll(); if (!animating && !lockP
 const NOTCH = 60;
 let notchDir = 0; let lastWheel = 0;
 window.addEventListener('wheel', (e) => {
-  if (!stepMode()) return;
+  if (!stepMode() || labOpen) return;   // the contact sheet scrolls its own strip
   e.preventDefault();
   const now = performance.now();
   if (animating || now < coolUntil) { wheelAcc = 0; return; }
@@ -201,7 +201,7 @@ window.addEventListener('wheel', (e) => {
   if (Math.abs(wheelAcc) >= NOTCH) { wheelAcc = 0; goTo(cur + dir); }
 }, { passive: false });
 window.addEventListener('keydown', (e) => {
-  if (!stepMode() || e.altKey || e.ctrlKey || e.metaKey) return;
+  if (!stepMode() || labOpen || e.altKey || e.ctrlKey || e.metaKey) return;
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
   let d = 0;
@@ -215,9 +215,9 @@ window.addEventListener('keydown', (e) => {
 });
 let touchY = null;
 window.addEventListener('touchstart', (e) => { touchY = e.touches[0].clientY; }, { passive: true });
-window.addEventListener('touchmove', (e) => { if (stepMode() && e.cancelable) e.preventDefault(); }, { passive: false });
+window.addEventListener('touchmove', (e) => { if (stepMode() && !labOpen && e.cancelable) e.preventDefault(); }, { passive: false });
 window.addEventListener('touchend', (e) => {
-  if (!stepMode() || touchY === null) return;
+  if (!stepMode() || labOpen || touchY === null) return;
   const dy = touchY - e.changedTouches[0].clientY; touchY = null;
   if (Math.abs(dy) > 40 && !animating) goTo(cur + (dy > 0 ? 1 : -1));
 });
@@ -228,22 +228,93 @@ const sectionStop = [2, 4, 6, 6 + 2 * nShops];   // about, skills, the first sho
   for (let k = 0; k <= n; k += 1) { const d = document.createElement('div'); d.className = 'proj-snap'; d.style.top = `calc((100% - 100vh) * ${k / n})`; sec.appendChild(d); }
 }
 
-/* ---------- the noodle bar's controls: a hotspot pinned to the wok, and the order pad ---------- */
+/* ---------- the photo lab's contact sheet: how Image Converter Pro works, one frame at a time ---------- */
+const LAB_FRAMES = [
+  { img: 'img/icp/01-load.jpg', thumb: 'img/icp/t-01-load.jpg', step: 'Step 01', title: 'Load the film', alt: 'The converter with five photos loaded: a drop zone, a box for image URLs, and the recipe panel',
+    text: 'Drop JPG, PNG, WEBP or AVIF files, browse for them, or paste image URLs one per line. Every file lands on the stack as a print.' },
+  { img: 'img/icp/02-contact-sheet.jpg', thumb: 'img/icp/t-02-contact-sheet.jpg', step: 'Step 02', title: 'The contact sheet', alt: 'Five uploaded photos shown as tilted prints, each with its file name and size',
+    text: 'Each upload becomes a print with its name and size. Take one off the sheet, or clear the roll and start again.' },
+  { img: 'img/icp/03-develop.jpg', thumb: 'img/icp/t-03-develop.jpg', step: 'Step 03', title: 'The recipe, then develop', alt: 'The recipe panel after developing: formats, target size, and a notice that the zip is downloading',
+    text: 'Pick the output formats and a target size per image; the equation shows sources times formats. Files go straight to storage, the server converts them with Sharp and searches the quality setting until each one fits, and a single file or a zip downloads.' },
+  { img: 'img/icp/04-free-roll.jpg', thumb: 'img/icp/t-04-free-roll.jpg', step: 'Free tier', title: 'Three free rolls', alt: 'A contact sheet with seven prints: the last two are locked as Pro frames and a banner says a free roll holds five',
+    text: 'Free users get three rolls of five images, counted per browser, per account and per IP address, so clearing cookies or opening a new account does not reset it. Extra prints lock as Pro frames.' },
+  { img: 'img/icp/05-pro.jpg', thumb: 'img/icp/t-05-pro.jpg', step: 'Pro', title: 'The Pro darkroom', alt: 'The paywall: a film strip of the user’s photos over a card listing the monthly plan',
+    text: 'Unlimited conversions and batches of up to fifty. The paywall says exactly what will not fit on a free roll, and offers to develop the first five anyway.' },
+  { img: 'img/icp/06-pro-pass.jpg', thumb: 'img/icp/t-06-pro-pass.jpg', step: 'Payments', title: 'The Pro pass', alt: 'The billing dialog: one to twelve month plans, a promo code field, and a choice of payment method',
+    text: 'One to twelve months, with longer-plan discounts, sale campaigns and promo codes on top. Pay by card, PayPal, or a bank transfer with a receipt that an admin approves.' },
+  { img: 'img/icp/07-accounts.jpg', thumb: 'img/icp/t-07-accounts.jpg', step: 'Accounts', title: 'Join the darkroom', alt: 'The create-account dialog with name, email and password fields',
+    text: 'Sign up with an email address and a six-digit code, or with Google. Reset a password by emailed code. Pro users get an invite link: every five friends who join take five percent off the next payment.' },
+  { img: 'img/icp/08-lab-console.jpg', thumb: 'img/icp/t-08-lab-console.jpg', step: 'Admin', title: 'The lab console', alt: 'The admin overview: payments to review, active Pro users, registered users, approved revenue, and Pro plans ending this week',
+    text: 'Review payments and receipts, grant or revoke Pro, see whose plan ends this week, run promotions, and set the price and bank details. A daily job cleans temporary files and sends expiry reminders.' },
+];
+const lab = $('#lab'); const labImg = $('#lab-img'); const labCap = $('#lab-cap'); const labStep = $('#lab-step'); const labTitle = $('#lab-title'); const labBody = $('#lab-body');
+const labCount = $('#lab-count'); const labStrip = $('#lab-strip'); const labPrint = $('#lab-print');
+let labOpen = false; let labIdx = 0;
+const pad2 = (n) => String(n).padStart(2, '0');
+const labThumbs = LAB_FRAMES.map((f, i) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'lab-thumb'; b.setAttribute('aria-label', `Frame ${i + 1}: ${f.title}`);
+  const im = document.createElement('img'); im.src = f.thumb; im.alt = ''; im.loading = 'lazy';
+  const no = document.createElement('b'); no.textContent = pad2(i + 1);
+  b.append(im, no); b.addEventListener('click', () => showFrame(i)); labStrip.appendChild(b);
+  return b;
+});
+function showFrame(i) {
+  labIdx = (i + LAB_FRAMES.length) % LAB_FRAMES.length;
+  const f = LAB_FRAMES[labIdx];
+  labImg.src = f.img; labImg.alt = f.alt; labCap.textContent = `Frame ${pad2(labIdx + 1)} · ${f.step}`;
+  labStep.textContent = `${f.step} · frame ${pad2(labIdx + 1)} of ${pad2(LAB_FRAMES.length)}`; labTitle.textContent = f.title; labBody.textContent = f.text;
+  labCount.textContent = `${pad2(labIdx + 1)} / ${pad2(LAB_FRAMES.length)}`;
+  labThumbs.forEach((t, k) => t.classList.toggle('on', k === labIdx));
+  labThumbs[labIdx].scrollIntoView({ block: 'nearest', inline: 'center', behavior: reduced ? 'auto' : 'smooth' });
+  labPrint.classList.remove('swap'); void labPrint.offsetWidth; labPrint.classList.add('swap');
+}
+function openLab(i = 0) {
+  if (labOpen) return;
+  labOpen = true; lab.hidden = false; document.documentElement.classList.add('lab-open'); document.body.classList.add('lab-open');
+  showFrame(i); $('#lab-close').focus();
+}
+function closeLab() {
+  if (!labOpen) return;
+  labOpen = false; lab.hidden = true; document.documentElement.classList.remove('lab-open'); document.body.classList.remove('lab-open');
+  $('#lab-open').focus({ preventScroll: true });
+}
+$('#lab-open').addEventListener('click', () => openLab(0));
+$('#spot-lab').addEventListener('click', () => openLab(0));
+$('#lab-close').addEventListener('click', closeLab);
+$('#lab-prev').addEventListener('click', () => showFrame(labIdx - 1));
+$('#lab-next').addEventListener('click', () => showFrame(labIdx + 1));
+window.addEventListener('keydown', (e) => {
+  if (!labOpen) return;
+  if (e.key === 'Escape') { e.preventDefault(); closeLab(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); showFrame(labIdx - 1); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); showFrame(labIdx + 1); }
+});
+{
+  // a swipe across the print moves one frame
+  let x0 = null;
+  lab.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+  lab.addEventListener('touchend', (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 50) showFrame(labIdx + (dx < 0 ? 1 : -1)); });
+}
+
+/* ---------- the hotspots pinned into the alley, and the noodle bar's order pad ---------- */
 const ticket = $('#ticket');
-const spots = [{ el: $('#spot-order'), anchor: market.anchors.order }];
+const spots = [
+  { el: $('#spot-order'), anchor: market.anchors.order, when: () => pages[1].classList.contains('live'), onNarrow: true },
+  { el: $('#spot-lab'), anchor: market.anchors.lab, when: () => projIdx === 2, onNarrow: false },   // a phone has the button in the project text instead
+];
 const openTicket = (o) => ticket.classList.toggle('open', o);
-spots[0].el.addEventListener('click', () => openTicket(!ticket.classList.contains('open')));
+$('#spot-order').addEventListener('click', () => openTicket(!ticket.classList.contains('open')));
 $('#ticket-close').addEventListener('click', () => openTicket(false));
-window.addEventListener('keydown', (e) => { if (e.key === 'Escape') openTicket(false); });
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !labOpen) openTicket(false); });
 const spotV = new THREE.Vector3();
 function placeSpots() {
-  const at = pages[1].classList.contains('live');
-  document.body.classList.toggle('at-stall', at);
-  if (!at) return;
-  const W = window.innerWidth; const H = window.innerHeight;
-  spots.forEach(({ el, anchor }) => {
+  const W = window.innerWidth; const H = window.innerHeight; const nr = narrow();
+  let any = false;
+  spots.forEach(({ el, anchor, when, onNarrow }) => {
+    if (!when() || (nr && !onNarrow) || labOpen) { el.classList.remove('vis'); return; }
+    any = true;
     let x; let y; let vis = true;
-    if (narrow()) { x = W / 2; y = H - 72; }   // a phone shows only part of the stall: the button sits along the bottom
+    if (nr) { x = W / 2; y = H - 72; }   // a phone shows only part of the stall: the button sits along the bottom
     else {
       spotV.copy(anchor).project(camera); vis = spotV.z < 1;
       x = THREE.MathUtils.clamp(((spotV.x + 1) / 2) * W, 70, W - 70); y = THREE.MathUtils.clamp(((1 - spotV.y) / 2) * H, 90, H - 110);
@@ -251,6 +322,7 @@ function placeSpots() {
     el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%)`;
     el.classList.toggle('vis', vis);
   });
+  document.body.classList.toggle('at-stall', any);
 }
 // the order pad: four dishes, the ingredients are the skills; pick one and the cook gets to work
 const dishesEl = $('#dishes'); const fill = $('#ticket-fill'); const ticketText = $('#ticket-text'); const again = $('#ticket-again');
