@@ -113,20 +113,18 @@ let textRight = 0;   // eases to 1 when the project text sits on the right (the 
 let camKeys = [];    // [[p, [x,y,z]]...] for the eye and the look
 let lookKeys = [];
 const stops = [];    // scroll positions: the gate, then a path stop and a stall stop for every section and every shop
-const stopKinds = [];   // 'stop' or 'path', one per entry of stops
-let walkDir = 1; let turnW = 0;   // walking back down the alley, the camera turns round on the path stops so you walk forwards
 const maxScroll = () => Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
 function layoutKeys() {
   const ms = maxScroll(); const vh = window.innerHeight; const nr = narrow();
   const hero = nr ? STOPS.heroNarrow : STOPS.hero;
   camKeys = [[0, hero.eye]]; lookKeys = [[0, hero.look]];
-  stops.length = 0; stops.push(0); stopKinds.length = 0; stopKinds.push('stop');
+  stops.length = 0; stops.push(0);
   let prev = { y: 0, z: hero.eye[2] };   // the last stall stop, for the path stop after it
   const path = (y, z) => {
     // half way along the walk: stand in the middle of the alley and look down it
     const py = (prev.y + y) / 2; const pz = (prev.z + z) / 2; const pm = clamp01(py / ms);
     camKeys.push([pm, [0, 1.62, pz]]); lookKeys.push([pm, [0, 1.7, pz - 6]]);
-    stops.push(Math.round(py)); stopKinds.push('path');
+    stops.push(Math.round(py));
   };
   pages.forEach((el, i) => {
     const top = el.offsetTop; const h = el.offsetHeight;
@@ -139,8 +137,8 @@ function layoutKeys() {
       camKeys.push([clamp01(centre - hold), s.eye], [clamp01(centre + hold), s.eye]);
       lookKeys.push([clamp01(centre - hold), s.look], [clamp01(centre + hold), s.look]);
       for (let k = 0; k < nShops; k += 1) {
-        if (k) { stops.push(Math.round(top + (span * (k - 0.5)) / (nShops - 1))); stopKinds.push('path'); }   // the path between two shops
-        stops.push(Math.round(top + (span * k) / (nShops - 1))); stopKinds.push('stop');
+        if (k) stops.push(Math.round(top + (span * (k - 0.5)) / (nShops - 1)));   // the path between two shops
+        stops.push(Math.round(top + (span * k) / (nShops - 1)));
       }
       prev = { y: top + span, z: shopView(SHOPS[nShops - 1], nr).eye[2] };
     } else {
@@ -148,7 +146,7 @@ function layoutKeys() {
       path(y, s.eye[2]);
       camKeys.push([clamp01(centre - hold), s.eye], [clamp01(centre + hold), s.eye]);
       lookKeys.push([clamp01(centre - hold), s.look], [clamp01(centre + hold), s.look]);
-      stops.push(Math.round(y)); stopKinds.push('stop');
+      stops.push(Math.round(y));
       prev = { y, z: s.eye[2] };
     }
   });
@@ -185,8 +183,7 @@ function goTo(i) {
   };
   animId = requestAnimationFrame(tick);
 }
-let lastY = 0;
-window.addEventListener('scroll', () => { readScroll(); const y = window.scrollY; if (Math.abs(y - lastY) > 2) walkDir = y > lastY ? 1 : -1; lastY = y; if (!animating && !lockP) cur = nearestStop(); }, { passive: true });
+window.addEventListener('scroll', () => { readScroll(); if (!animating && !lockP) cur = nearestStop(); }, { passive: true });
 // one wheel notch (one click of a mouse wheel, or the same distance on a trackpad) moves one stop
 const NOTCH = 60;
 let notchDir = 0; let lastWheel = 0;
@@ -399,10 +396,6 @@ function updateCamera(dt) {
     camPos.lerp(walkEye, projW); camLook.lerp(walkLook, projW);
   }
   if (market.cam.w > 0.001) { camPos.lerp(market.cam.eye, market.cam.w); camLook.lerp(market.cam.look, market.cam.w); }   // an order cooking: close over the bench
-  // going back: on the path stops the camera has turned round, so the walk back reads as walking forwards
-  const turnTarget = walkDir < 0 && stopKinds[cur] === 'path' && market.cam.w < 0.5 ? 1 : 0;
-  turnW += (turnTarget - turnW) * (1 - Math.exp(-2.5 * dt));
-  if (turnW > 0.001) { fwd.copy(camLook).sub(camPos); fwd.applyAxisAngle(camera.up, Math.PI * turnW); camLook.copy(camPos).add(fwd); }
   camPos.y += Math.sin(nowT * 0.6) * 0.02;
   mouseSmooth.lerp(mouse, 1 - Math.pow(0.001, dt));
   camPos.x += mouseSmooth.x * 0.2;
@@ -528,8 +521,9 @@ async function syncWeather() {
     const res = await fetch(weatherUrl(at), { cache: 'no-store' }); const data = await res.json(); const c = data.current;
     const mm = (c.precipitation || 0) + (c.rain || 0) + (c.showers || 0);
     const code = c.weather_code;
-    const rainy = mm > 0 || (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95;
-    const k = rainy ? THREE.MathUtils.clamp(0.5 + mm * 0.2, 0.5, 1) : 0;
+    // real rain only: at least 1 mm in the current reading, or a moderate-or-heavier rain, shower or thunder code; a trace of drizzle stays dry
+    const rainy = mm >= 1 || [63, 65, 67, 81, 82].includes(code) || code >= 95;
+    const k = rainy ? THREE.MathUtils.clamp(0.5 + mm * 0.15, 0.5, 1) : 0;
     market.setRain(k); lastRain = k;
     try { localStorage.setItem('nm-rain', String(k)); } catch (err) { /* private mode */ }
     document.body.dataset.weather = rainy ? 'rain' : 'dry';

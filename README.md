@@ -21,7 +21,8 @@ follows when you arrive, and the content drifts gently against the mouse.
 It rains in the alley when it rains where the visitor is. The page asks the browser for the device's location
 (the browser shows a permission prompt; if it is declined or unavailable, Colombo is used, where the market is)
 and asks Open-Meteo (free, no key) for the current precipitation and weather code there on load, every 2 minutes,
-and whenever the tab comes back into view
+and whenever the tab comes back into view. Only real rain counts: at least 1 mm in the current reading or a
+moderate-or-heavier rain, shower or thunder code; a trace of drizzle in the model leaves the alley dry
 (the feed itself refreshes every 15 minutes); when it is dry the rain stops, the
 puddles fade and the asphalt loses its shine. Add `?rain=1` or `?rain=0` to the address to force either.
 If the request fails the rain stays on.
