@@ -497,16 +497,22 @@ renderer.setAnimationLoop(loop);
 /* ---------- the weather: it rains in the alley when it rains where the visitor is (device location, Open-Meteo, no key), checked every 2 minutes and whenever the tab comes back ---------- */
 const COLOMBO = { lat: 6.9271, lon: 79.8612 };   // where the market is: the fallback when the device will not say where it is
 let here = null;
-function locate() {
-  if (here) return Promise.resolve(here);
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) { resolve(COLOMBO); return; }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { here = { lat: pos.coords.latitude, lon: pos.coords.longitude }; resolve(here); },
-      () => resolve(COLOMBO),
-      { timeout: 8000, maximumAge: 10 * 60 * 1000 },
-    );
-  });
+// where the device is, without a permission prompt: the precise position if the browser already allows it,
+// otherwise the network's idea of the city; Colombo only if neither answers
+async function locate() {
+  if (here) return here;
+  try {
+    const perm = navigator.permissions ? await navigator.permissions.query({ name: 'geolocation' }) : null;
+    if (perm && perm.state === 'granted') {
+      here = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition((pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, how: 'device position' }), reject, { timeout: 5000, maximumAge: 10 * 60 * 1000 }));
+      return here;
+    }
+  } catch (err) { /* no precise position: fall through */ }
+  try {
+    const res = await fetch('https://get.geojs.io/v1/ip/geo.json', { cache: 'no-store' }); const g = await res.json();
+    if (Number.isFinite(Number(g.latitude))) { here = { lat: Number(g.latitude), lon: Number(g.longitude), how: `network location, ${g.city || g.country || 'unknown city'}` }; return here; }
+  } catch (err) { /* no network location either */ }
+  return { ...COLOMBO, how: 'Colombo, location unknown' };
 }
 const weatherUrl = ({ lat, lon }) => `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=precipitation,rain,showers,weather_code&timezone=auto`;
 // start from the last weather this browser saw, so the alley opens in the right state while the fresh reading loads
@@ -521,13 +527,13 @@ async function syncWeather() {
     const res = await fetch(weatherUrl(at), { cache: 'no-store' }); const data = await res.json(); const c = data.current;
     const mm = (c.precipitation || 0) + (c.rain || 0) + (c.showers || 0);
     const code = c.weather_code;
-    // real rain only: at least 1 mm in the current reading, or a moderate-or-heavier rain, shower or thunder code; a trace of drizzle stays dry
-    const rainy = mm >= 1 || [63, 65, 67, 81, 82].includes(code) || code >= 95;
+    // real rain only: at least 1 mm fell in the current 15-minute reading; the weather code alone (a forecast of showers) does not count
+    const rainy = mm >= 1;
     const k = rainy ? THREE.MathUtils.clamp(0.5 + mm * 0.15, 0.5, 1) : 0;
     market.setRain(k); lastRain = k;
     try { localStorage.setItem('nm-rain', String(k)); } catch (err) { /* private mode */ }
     document.body.dataset.weather = rainy ? 'rain' : 'dry';
-    console.info(`Weather at ${at === COLOMBO ? 'Colombo (device location not shared)' : `${at.lat.toFixed(2)}, ${at.lon.toFixed(2)}`}: code ${code}, ${mm} mm: ${rainy ? 'rain' : 'dry'}`);
+    console.info(`Weather (${at.how}, ${at.lat.toFixed(2)}, ${at.lon.toFixed(2)}): code ${code}, ${mm} mm in the last 15 minutes: ${rainy ? 'rain' : 'dry'}`);
   } catch (err) { console.warn('Weather unavailable.', err); if (lastRain === null) market.setRain(1); }
 }
 let lastSync = 0;

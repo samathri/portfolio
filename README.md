@@ -18,14 +18,13 @@ follows when you arrive, and the content drifts gently against the mouse.
 
 ## Weather
 
-It rains in the alley when it rains where the visitor is. The page asks the browser for the device's location
-(the browser shows a permission prompt; if it is declined or unavailable, Colombo is used, where the market is)
-and asks Open-Meteo (free, no key) for the current precipitation and weather code there on load, every 2 minutes,
-and whenever the tab comes back into view. Only real rain counts: at least 1 mm in the current reading or a
-moderate-or-heavier rain, shower or thunder code; a trace of drizzle in the model leaves the alley dry
-(the feed itself refreshes every 15 minutes); when it is dry the rain stops, the
-puddles fade and the asphalt loses its shine. Add `?rain=1` or `?rain=0` to the address to force either.
-If the request fails the rain stays on.
+It rains in the alley when it rains where the visitor is. The page finds the device's location without a
+permission prompt: the precise position if the browser already allows it, otherwise the network's idea of the
+city (geojs.io, free, no key), and Colombo if neither answers. It then asks Open-Meteo (free, no key) for the
+precipitation there on load, every 2 minutes and whenever the tab comes back. Only measured rain counts: at
+least 1 mm in the current 15-minute reading; a forecast code of showers on its own leaves the alley dry. The
+data is a weather model, not a rain gauge, so it can differ from a weather widget. Add `?rain=1` or `?rain=0`
+to the address to force either.
 
 ## Run
 
