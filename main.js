@@ -501,8 +501,21 @@ function loop() {
 }
 renderer.setAnimationLoop(loop);
 
-/* ---------- the weather: it rains in the alley when it rains in Colombo (Open-Meteo, no key), checked every 2 minutes and whenever the tab comes back ---------- */
-const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=6.9271&longitude=79.8612&current=precipitation,rain,showers,weather_code&timezone=Asia%2FColombo';
+/* ---------- the weather: it rains in the alley when it rains where the visitor is (device location, Open-Meteo, no key), checked every 2 minutes and whenever the tab comes back ---------- */
+const COLOMBO = { lat: 6.9271, lon: 79.8612 };   // where the market is: the fallback when the device will not say where it is
+let here = null;
+function locate() {
+  if (here) return Promise.resolve(here);
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) { resolve(COLOMBO); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { here = { lat: pos.coords.latitude, lon: pos.coords.longitude }; resolve(here); },
+      () => resolve(COLOMBO),
+      { timeout: 8000, maximumAge: 10 * 60 * 1000 },
+    );
+  });
+}
+const weatherUrl = ({ lat, lon }) => `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=precipitation,rain,showers,weather_code&timezone=auto`;
 // start from the last weather this browser saw, so the alley opens in the right state while the fresh reading loads
 let lastRain = null;
 try { const v = localStorage.getItem('nm-rain'); if (v !== null) lastRain = Number(v); } catch (err) { /* private mode */ }
@@ -511,7 +524,8 @@ market.setRain(forcedRain !== null ? Number(forcedRain) : (lastRain ?? 0), true)
 async function syncWeather() {
   if (forcedRain !== null) { document.body.dataset.weather = Number(forcedRain) > 0 ? 'rain' : 'dry'; return; }
   try {
-    const res = await fetch(WEATHER_URL, { cache: 'no-store' }); const data = await res.json(); const c = data.current;
+    const at = await locate();
+    const res = await fetch(weatherUrl(at), { cache: 'no-store' }); const data = await res.json(); const c = data.current;
     const mm = (c.precipitation || 0) + (c.rain || 0) + (c.showers || 0);
     const code = c.weather_code;
     const rainy = mm > 0 || (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95;
@@ -519,7 +533,7 @@ async function syncWeather() {
     market.setRain(k); lastRain = k;
     try { localStorage.setItem('nm-rain', String(k)); } catch (err) { /* private mode */ }
     document.body.dataset.weather = rainy ? 'rain' : 'dry';
-    console.info(`Colombo now: weather code ${code}, ${mm} mm in the last hour: ${rainy ? 'rain' : 'dry'}`);
+    console.info(`Weather at ${at === COLOMBO ? 'Colombo (device location not shared)' : `${at.lat.toFixed(2)}, ${at.lon.toFixed(2)}`}: code ${code}, ${mm} mm: ${rainy ? 'rain' : 'dry'}`);
   } catch (err) { console.warn('Weather unavailable.', err); if (lastRain === null) market.setRain(1); }
 }
 let lastSync = 0;
