@@ -494,7 +494,7 @@ function loop() {
 }
 renderer.setAnimationLoop(loop);
 
-/* ---------- the weather: it rains in the alley when it rains in Colombo (Open-Meteo, no key), checked every 15 minutes ---------- */
+/* ---------- the weather: it rains in the alley when it rains in Colombo (Open-Meteo, no key), checked every 2 minutes and whenever the tab comes back ---------- */
 const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=6.9271&longitude=79.8612&current=precipitation,rain,showers,weather_code&timezone=Asia%2FColombo';
 // start from the last weather this browser saw, so the alley opens in the right state while the fresh reading loads
 let lastRain = null;
@@ -504,7 +504,7 @@ market.setRain(forcedRain !== null ? Number(forcedRain) : (lastRain ?? 0), true)
 async function syncWeather() {
   if (forcedRain !== null) { document.body.dataset.weather = Number(forcedRain) > 0 ? 'rain' : 'dry'; return; }
   try {
-    const res = await fetch(WEATHER_URL); const data = await res.json(); const c = data.current;
+    const res = await fetch(WEATHER_URL, { cache: 'no-store' }); const data = await res.json(); const c = data.current;
     const mm = (c.precipitation || 0) + (c.rain || 0) + (c.showers || 0);
     const code = c.weather_code;
     const rainy = mm > 0 || (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95;
@@ -515,8 +515,13 @@ async function syncWeather() {
     console.info(`Colombo now: weather code ${code}, ${mm} mm in the last hour: ${rainy ? 'rain' : 'dry'}`);
   } catch (err) { console.warn('Weather unavailable.', err); if (lastRain === null) market.setRain(1); }
 }
-syncWeather();
-setInterval(syncWeather, 15 * 60 * 1000);
+let lastSync = 0;
+const syncWeatherNow = () => { const now = Date.now(); if (now - lastSync < 30 * 1000) return; lastSync = now; syncWeather(); };
+syncWeatherNow();
+setInterval(syncWeatherNow, 2 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) syncWeatherNow(); });
+window.addEventListener('focus', syncWeatherNow);
+window.addEventListener('online', syncWeatherNow);
 
 // Debug hooks; nothing on the page depends on these.
 window.__nm = {

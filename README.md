@@ -19,7 +19,8 @@ follows when you arrive, and the content drifts gently against the mouse.
 ## Weather
 
 It rains in the alley when it rains in Colombo. The page asks Open-Meteo (free, no key) for Colombo's
-current precipitation and weather code on load and every 15 minutes; when it is dry the rain stops, the
+current precipitation and weather code on load, every 2 minutes, and whenever the tab comes back into view
+(the feed itself refreshes every 15 minutes); when it is dry the rain stops, the
 puddles fade and the asphalt loses its shine. Add `?rain=1` or `?rain=0` to the address to force either.
 If the request fails the rain stays on.
 
