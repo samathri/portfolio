@@ -16,6 +16,13 @@ follows when you arrive, and the content drifts gently against the mouse.
 | Projects | Five shops down the alley, left and right in turn, each named after a project with a lit board of what it is made with. A path stop and a shop stop per project; the text sits across the alley from the shop, and the dots show which shop you are at. Shop 3 is a photo lab for Image Converter Pro: its lightbox shows a strip of four screens from the app, three more hang as prints on a line under a red safelight, and a hotspot at the developing trays (or the See how it works button) opens the contact sheet, eight frames that walk through the app with a screenshot and a note each |
 | Contact me | Text in the left three quarters, the phone kiosk in the right quarter. Hovering the number or the email lights the kiosk |
 
+## Weather
+
+It rains in the alley when it rains in Colombo. The page asks Open-Meteo (free, no key) for Colombo's
+current precipitation and weather code on load and every 15 minutes; when it is dry the rain stops, the
+puddles fade and the asphalt loses its shine. Add `?rain=1` or `?rain=0` to the address to force either.
+If the request fails the rain stays on.
+
 ## Run
 
 Keep XAMPP Apache running and open <http://localhost/portfolio/>. No build step, nothing to install:

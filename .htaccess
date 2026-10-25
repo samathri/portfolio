@@ -1,0 +1,7 @@
+# Local development on XAMPP: never let the browser keep a stale script or stylesheet.
+# Files may be cached but must be revalidated on every load (a cheap 304 when unchanged).
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|html)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>

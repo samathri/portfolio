@@ -494,6 +494,30 @@ function loop() {
 }
 renderer.setAnimationLoop(loop);
 
+/* ---------- the weather: it rains in the alley when it rains in Colombo (Open-Meteo, no key), checked every 15 minutes ---------- */
+const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=6.9271&longitude=79.8612&current=precipitation,rain,showers,weather_code&timezone=Asia%2FColombo';
+// start from the last weather this browser saw, so the alley opens in the right state while the fresh reading loads
+let lastRain = null;
+try { const v = localStorage.getItem('nm-rain'); if (v !== null) lastRain = Number(v); } catch (err) { /* private mode */ }
+const forcedRain = new URLSearchParams(location.search).get('rain');   // ?rain=1 or ?rain=0 to see either sky
+market.setRain(forcedRain !== null ? Number(forcedRain) : (lastRain ?? 0), true);
+async function syncWeather() {
+  if (forcedRain !== null) { document.body.dataset.weather = Number(forcedRain) > 0 ? 'rain' : 'dry'; return; }
+  try {
+    const res = await fetch(WEATHER_URL); const data = await res.json(); const c = data.current;
+    const mm = (c.precipitation || 0) + (c.rain || 0) + (c.showers || 0);
+    const code = c.weather_code;
+    const rainy = mm > 0 || (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95;
+    const k = rainy ? THREE.MathUtils.clamp(0.5 + mm * 0.2, 0.5, 1) : 0;
+    market.setRain(k); lastRain = k;
+    try { localStorage.setItem('nm-rain', String(k)); } catch (err) { /* private mode */ }
+    document.body.dataset.weather = rainy ? 'rain' : 'dry';
+    console.info(`Colombo now: weather code ${code}, ${mm} mm in the last hour: ${rainy ? 'rain' : 'dry'}`);
+  } catch (err) { console.warn('Weather unavailable.', err); if (lastRain === null) market.setRain(1); }
+}
+syncWeather();
+setInterval(syncWeather, 15 * 60 * 1000);
+
 // Debug hooks; nothing on the page depends on these.
 window.__nm = {
   get p() { return p; },
@@ -502,7 +526,7 @@ window.__nm = {
   get time() { return clock.elapsedTime; },
   get stops() { return stops.slice(); },
   get cur() { return cur; },
-  market, camera, scene, goTo,
+  market, camera, scene, goTo, syncWeather,
   setP(v) {
     lockP = true; window.scrollTo({ top: 0, behavior: 'instant' }); pRaw = v; p = v;
     const vs = v * maxScroll(); $('#main').style.transform = `translateY(${-vs}px)`;

@@ -104,7 +104,8 @@ export function buildScene() {
     ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 3; for (let i = 0; i <= 4; i += 1) { ctx.beginPath(); ctx.moveTo(0, i * 128); ctx.lineTo(w, i * 128); ctx.stroke(); ctx.beginPath(); ctx.moveTo(i * 128, 0); ctx.lineTo(i * 128, h); ctx.stroke(); }
   });
   asphalt.wrapS = asphalt.wrapT = THREE.RepeatWrapping; asphalt.repeat.set(4, 22);
-  const ground = K.plane(9, 46, new THREE.MeshStandardMaterial({ map: asphalt, roughness: 0.28, metalness: 0.45 }), 0, 0, -12);
+  const groundMat = new THREE.MeshStandardMaterial({ map: asphalt, roughness: 0.28, metalness: 0.45 });   // wet asphalt; dries out when the rain stops
+  const ground = K.plane(9, 46, groundMat, 0, 0, -12);
   ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; group.add(ground);
   const puddleMat = new THREE.MeshStandardMaterial({ color: 0x0b0d12, roughness: 0.03, metalness: 0.9, transparent: true, opacity: 0.9 });
   for (let i = 0; i < 22; i += 1) {
@@ -524,18 +525,19 @@ export function buildScene() {
     const n = 1400; const pos = new Float32Array(n * 6); const spd = new Float32Array(n * 2);
     for (let i = 0; i < n; i += 1) { const x = (Math.random() - 0.5) * 8; const z = (Math.random() - 0.5) * 24; const y = Math.random() * 12; const len = 0.25 + Math.random() * 0.35; const s = 7 + Math.random() * 5; pos.set([x, y, z, x, y - len, z], i * 6); spd[i * 2] = s; spd[i * 2 + 1] = s; }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('aSpeed', new THREE.BufferAttribute(spd, 1));
-    const uniforms = { uT: { value: 0 }, uCamZ: { value: 0 } };
+    const uniforms = { uT: { value: 0 }, uCamZ: { value: 0 }, uK: { value: 1 } };
     const mat = new THREE.ShaderMaterial({ uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
       vertexShader: 'uniform float uT, uCamZ; attribute float aSpeed; varying float vA; void main(){ vec3 p = position; p.y = mod(p.y - uT * aSpeed, 12.0); p.z += uCamZ - 6.0; vA = 0.5 + 0.5 * fract(p.x * 7.3); gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); }',
-      fragmentShader: 'varying float vA; void main(){ gl_FragColor = vec4(0.65, 0.78, 0.95, 0.16 * vA); }' });
+      fragmentShader: 'uniform float uK; varying float vA; void main(){ gl_FragColor = vec4(0.65, 0.78, 0.95, 0.16 * vA * uK); }' });
     const lines = new THREE.LineSegments(g, mat); lines.frustumCulled = false; group.add(lines);
-    return uniforms;
+    return { uniforms, lines };
   })();
   group.add(new THREE.Mesh(new THREE.PlaneGeometry(60, 40), new THREE.MeshBasicMaterial({ color: 0x090b14 })).translateY(12).translateZ(-45));
 
   /* ---------- behaviour ---------- */
   let hover = null; let ringK = 0; let ringing = false; let activeProject = -1;
   let cooking = null; let lastT = 0;   // an order on the go: { dish, t0, ings, total, onStep, onDone }
+  let rainK = 1; let rainTarget = 1;   // how hard it rains, 0 to 1: follows the weather
   const cam = { w: 0, eye: new THREE.Vector3(), look: new THREE.Vector3() };   // the close-up over the bench while an order cooks
   const vTarget = new THREE.Vector3();
   const pour = (k, color, at) => {
@@ -597,14 +599,20 @@ export function buildScene() {
         }
         if (u >= c.total) { const done = c.onDone; cooking = null; resetKitchen(); cam.w = 0; if (done) done(); }
       } else if (cam.w > 0) cam.w = Math.max(0, cam.w - dt * 1.5);
-      rain.uT.value = t;
+      rain.uniforms.uT.value = t;
+      // the weather: the rain eases in or out, the puddles fade and the asphalt dries
+      rainK += (rainTarget - rainK) * (1 - Math.exp(-1.2 * dt));
+      rain.uniforms.uK.value = rainK; rain.lines.visible = rainK > 0.01;
+      puddleMat.opacity = 0.3 + 0.6 * rainK; groundMat.roughness = 0.7 - 0.42 * rainK; groundMat.metalness = 0.15 + 0.3 * rainK;
       ringK += ((ringing ? 1 : 0) - ringK) * e;
       kioskLed.material.emissiveIntensity = 0.3 + ringK * (Math.sin(t * 14) > 0 ? 3 : 0.3);
       kioskLight.intensity = 3 + 4 * ringK * (0.6 + 0.4 * Math.sin(t * 9));
     },
     setHover(id) { hover = id; },
     setActiveProject(i) { activeProject = i; },
-    setCameraZ(z) { rain.uCamZ.value = z; },
+    setCameraZ(z) { rain.uniforms.uCamZ.value = z; },
+    setRain(k, immediate = false) { rainTarget = Math.min(1, Math.max(0, k)); if (immediate) rainK = rainTarget; },
+    get rain() { return rainK; },
     ring(on) { ringing = !!on; },
     cook(i, { narrow = false, onStep = null, onDone = null } = {}) {
       const dish = COURSES[i]; const k = kitchen;
