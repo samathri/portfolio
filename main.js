@@ -96,6 +96,7 @@ scene.add(key, key.target);
 
 const market = buildScene();
 scene.add(market.group);
+renderer.compile(scene, camera);   // build every shader now, so the first scroll does not stall on a compile
 
 /* ---------- the page drives the camera ---------- */
 const pages = $$('.page');
@@ -527,8 +528,8 @@ async function syncWeather() {
     const res = await fetch(weatherUrl(at), { cache: 'no-store' }); const data = await res.json(); const c = data.current;
     const mm = (c.precipitation || 0) + (c.rain || 0) + (c.showers || 0);
     const code = c.weather_code;
-    // real rain only: at least 1 mm fell in the current 15-minute reading; the weather code alone (a forecast of showers) does not count
-    const rainy = mm >= 1;
+    // real rain only: at least 2 mm in the current 15-minute reading (proper rain, not a modelled passing shower); the weather code alone does not count
+    const rainy = mm >= 2;
     const k = rainy ? THREE.MathUtils.clamp(0.5 + mm * 0.15, 0.5, 1) : 0;
     market.setRain(k); lastRain = k;
     try { localStorage.setItem('nm-rain', String(k)); } catch (err) { /* private mode */ }

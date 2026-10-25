@@ -22,7 +22,7 @@ It rains in the alley when it rains where the visitor is. The page finds the dev
 permission prompt: the precise position if the browser already allows it, otherwise the network's idea of the
 city (geojs.io, free, no key), and Colombo if neither answers. It then asks Open-Meteo (free, no key) for the
 precipitation there on load, every 2 minutes and whenever the tab comes back. Only measured rain counts: at
-least 1 mm in the current 15-minute reading; a forecast code of showers on its own leaves the alley dry. The
+least 2 mm in the current 15-minute reading; a forecast code of showers on its own leaves the alley dry. The
 data is a weather model, not a rain gauge, so it can differ from a weather widget. Add `?rain=1` or `?rain=0`
 to the address to force either.
 
