@@ -124,7 +124,7 @@ body.at-stall:not(.cooking) .spot.vis { opacity: 1; pointer-events: auto; }
 .proj-dots li.on { background: var(--orange); box-shadow: 0 0 10px var(--orange); }
 
 /* ---------- the photo lab's contact sheet: the camera comes in on the lightbox, the frame develops on it, and the note sits across the alley with the controls under it ---------- */
-html.lab-open { overflow: hidden; }
+/* (no overflow lock on the root while it is open: that would make the body the scroller and un-pin the sticky frame the note lives in; the page is held still by the wheel, key and touch handlers instead) */
 body.lab-open .spots { display: none; }
 body.lab-open .proj .proj-text { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
 .lab-panel { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: center; pointer-events: none; }

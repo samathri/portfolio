@@ -189,7 +189,8 @@ window.addEventListener('scroll', () => { readScroll(); if (!animating && !lockP
 const NOTCH = 60;
 let notchDir = 0; let lastWheel = 0;
 window.addEventListener('wheel', (e) => {
-  if (!stepMode() || labOpen) return;   // the contact sheet scrolls its own strip
+  if (labOpen) { e.preventDefault(); return; }   // the contact sheet holds the page still
+  if (!stepMode()) return;
   e.preventDefault();
   const now = performance.now();
   if (animating || now < coolUntil) { wheelAcc = 0; return; }
@@ -202,7 +203,8 @@ window.addEventListener('wheel', (e) => {
   if (Math.abs(wheelAcc) >= NOTCH) { wheelAcc = 0; goTo(cur + dir); }
 }, { passive: false });
 window.addEventListener('keydown', (e) => {
-  if (!stepMode() || labOpen || e.altKey || e.ctrlKey || e.metaKey) return;
+  if (labOpen) { if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'Home', 'End'].includes(e.key)) e.preventDefault(); return; }   // the contact sheet holds the page still
+  if (!stepMode() || e.altKey || e.ctrlKey || e.metaKey) return;
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
   let d = 0;
@@ -216,7 +218,7 @@ window.addEventListener('keydown', (e) => {
 });
 let touchY = null;
 window.addEventListener('touchstart', (e) => { touchY = e.touches[0].clientY; }, { passive: true });
-window.addEventListener('touchmove', (e) => { if (stepMode() && !labOpen && e.cancelable) e.preventDefault(); }, { passive: false });
+window.addEventListener('touchmove', (e) => { if ((stepMode() || labOpen) && e.cancelable) e.preventDefault(); }, { passive: false });
 window.addEventListener('touchend', (e) => {
   if (!stepMode() || labOpen || touchY === null) return;
   const dy = touchY - e.changedTouches[0].clientY; touchY = null;
