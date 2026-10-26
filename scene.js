@@ -188,17 +188,18 @@ export function buildScene() {
     if (labView.img) {
       // one frame, mounted on paper: the print fades up from red to full over the first moments, like paper in the developer
       const a = K.smooth(labView.a);
-      const mx = w * 0.035; const my = h * 0.055; const mw = w * 0.93; const mh = h * 0.8;
+      const mx = w * 0.03; const my = h * 0.04; const mw = w * 0.94; const mh = h * 0.85;
       ctx.fillStyle = '#f4f2ee'; ctx.fillRect(mx, my, mw, mh);
-      const ix = w * 0.06; const iy = h * 0.085; const iw = w * 0.88; const ih = h * 0.67;
+      const ix = w * 0.05; const iy = h * 0.06; const iw = w * 0.9; const ih = h * 0.73;
       ctx.fillStyle = '#111115'; ctx.fillRect(ix, iy, iw, ih);
       const im = labView.img; const s = Math.min(iw / im.naturalWidth, ih / im.naturalHeight); const dw = im.naturalWidth * s; const dh = im.naturalHeight * s;
+      ctx.imageSmoothingQuality = 'high';
       ctx.globalAlpha = Math.max(0.05, a); ctx.drawImage(im, ix + (iw - dw) / 2, iy + (ih - dh) / 2, dw, dh); ctx.globalAlpha = 1;
       ctx.fillStyle = `rgba(229,35,43,${(0.6 * (1 - a)).toFixed(3)})`; ctx.fillRect(ix, iy, iw, ih);
-      ctx.fillStyle = '#6b6257'; ctx.font = `700 ${h * 0.036}px ${K.FONT}`; ctx.letterSpacing = '3px';
-      ctx.fillText(`FRAME ${labView.no}`, ix, h * 0.81); ctx.textAlign = 'right'; ctx.fillText('IMAGE CONVERTER PRO', ix + iw, h * 0.81); ctx.textAlign = 'left';
-      ctx.fillStyle = c; ctx.font = `800 ${h * 0.06}px ${K.FONT}`; ctx.letterSpacing = '4px'; ctx.fillText(labView.title, w * 0.05, h * 0.925, w * 0.62);
-      ctx.textAlign = 'right'; ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.04}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText(`${labView.no} OF 08`, w * 0.95, h * 0.925); ctx.textAlign = 'left';
+      ctx.fillStyle = '#6b6257'; ctx.font = `700 ${h * 0.034}px ${K.FONT}`; ctx.letterSpacing = '3px';
+      ctx.fillText(`FRAME ${labView.no}`, ix, h * 0.84); ctx.textAlign = 'right'; ctx.fillText('IMAGE CONVERTER PRO', ix + iw, h * 0.84); ctx.textAlign = 'left';
+      ctx.fillStyle = c; ctx.font = `800 ${h * 0.056}px ${K.FONT}`; ctx.letterSpacing = '4px'; ctx.fillText(labView.title, w * 0.05, h * 0.945, w * 0.62);
+      ctx.textAlign = 'right'; ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.038}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText(`${labView.no} OF 08`, w * 0.95, h * 0.945); ctx.textAlign = 'left';
       return;
     }
     ctx.fillStyle = c; ctx.font = `800 ${h * 0.17}px ${K.FONT}`; ctx.letterSpacing = '2px'; ctx.fillText(pr.no, w * 0.05, h * 0.16);
@@ -225,7 +226,7 @@ export function buildScene() {
       ctx.fillStyle = c; ctx.font = `800 ${h * 0.045}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText(`0${i + 1}  ${label}`, x + w * 0.012, y0 + fh - h * 0.037);
     });
     ctx.fillStyle = '#f4ecd8'; ctx.font = `700 ${h * 0.045}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText('MADE WITH  ' + pr.stack.join('  ·  '), w * 0.05, h * 0.92, w * 0.62);
-    ctx.textAlign = 'right'; ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.04}px ${K.FONT}`; ctx.fillText('OPEN SOURCE · VIEW THE CODE', w * 0.95, h * 0.92); ctx.textAlign = 'left';
+    ctx.textAlign = 'right'; ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.04}px ${K.FONT}`; ctx.fillText('LIVE · OPEN THE SITE', w * 0.95, h * 0.92); ctx.textAlign = 'left';
   };
 
   const steamTex = K.canvasTexture(64, 64, (ctx, w, h) => { const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h); });
@@ -397,7 +398,9 @@ export function buildScene() {
     if (big) {
       // a lit board hung on two chains from the awning bar, big enough to read from the alley: the menu, a project's board, or the lab's lightbox (set right, so the prints hang clear of it)
       const bw = bigMenu ? 2.7 : lab ? 2.0 : 1.7; const bh = bigMenu ? 1.3 : lab ? 1.15 : 1.05; const bx = lab ? 0.5 : 0; const topY = 1.85 + bh / 2;
-      const board = K.screen(bw, bh, big, { res: bigMenu || lab ? 760 : 512, glow: color, glowScale: 1.04, intensity: 1.45 });
+      // the lab's lightbox is painted at a higher resolution and kept matte, since the camera comes right up to it and the lamps above would otherwise glare on it
+      const board = K.screen(bw, bh, big, { res: lab ? 1100 : bigMenu ? 760 : 512, glow: color, glowScale: 1.04, intensity: 1.45 });
+      if (lab) { board.mesh.material.roughness = 1; board.mesh.material.metalness = 0; board.tex.anisotropy = 8; }
       board.group.position.set(bx, 1.85, -0.55); g.add(board.group); g.userData.board = board;
       g.add(K.box(bw + 0.1, bh + 0.1, 0.06, DARKWOOD, bx, 1.85, -0.59));
       g.add(K.box(bw + 0.1, 0.05, 0.08, WOOD, bx, topY + 0.03, -0.58)); g.add(K.box(bw + 0.1, 0.05, 0.08, WOOD, bx, 1.85 - bh / 2 - 0.03, -0.58));
@@ -576,7 +579,8 @@ export function buildScene() {
       for (let i = 0; i < lanterns.length; i += 1) { const l = lanterns[i]; l.mesh.rotation.z = Math.sin(t * 0.9 + l.seed) * 0.06; l.mesh.rotation.x = Math.sin(t * 0.7 + l.seed * 2) * 0.05; }
       for (let i = 0; i < projectStalls.length; i += 1) {
         const l = projectStalls[i]; const want = activeProject === i ? 1 : 0; l.k += (want - l.k) * e;
-        l.lamp.intensity = 3.5 + 4.5 * l.k; l.sign.setPower(0.8 + 0.45 * l.k); l.board.setPower(0.9 + 0.7 * l.k);
+        l.lamp.intensity = 3.5 + 4.5 * l.k; l.sign.setPower(0.8 + 0.45 * l.k);
+        l.board.setPower((0.9 + 0.7 * l.k) * (l.g === labStall && labView.on ? 0.7 : 1));   // a frame on show is lit more gently, so its highlights do not clip
         if (activeProject === i) { focusLight.position.set(l.s.x * 0.5, 2.5, l.s.z); focusLight.color.set(PROJECTS[i].color); }
       }
       focusLight.intensity = activeProject >= 0 ? 6 * projectStalls[activeProject].k : 0;
