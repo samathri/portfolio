@@ -112,6 +112,22 @@
             </div>
           </article>
         </div>
+        <!-- the photo lab's contact sheet: the camera comes in on the lightbox, the frame develops on it, and this note sits across the alley -->
+        <div class="lab-panel" id="lab" role="region" aria-label="How Image Converter Pro works" hidden>
+          <div class="lab-note">
+            <p class="eyebrow" id="lab-step" style="--c:#ff3fa8"></p>
+            <h3 id="lab-title"></h3>
+            <p id="lab-body"></p>
+            <div class="lab-strip" id="lab-strip" aria-label="Frames"></div>
+            <div class="lab-nav">
+              <button type="button" class="lab-arrow" id="lab-prev" aria-label="Previous frame">&larr;</button>
+              <span id="lab-count" aria-live="polite"></span>
+              <button type="button" class="lab-arrow" id="lab-next" aria-label="Next frame">&rarr;</button>
+              <button type="button" class="lab-close" id="lab-close">Back to the alley</button>
+            </div>
+            <a class="lab-link" href="https://github.com/samathri/image-converter-pro" target="_blank" rel="noopener noreferrer">View the code on GitHub &rarr;</a>
+          </div>
+        </div>
         <ol class="proj-dots" id="proj-dots" aria-hidden="true"><li class="on"></li><li></li><li></li><li></li><li></li></ol>
       </div>
     </section>
@@ -145,29 +161,6 @@
     <button class="spot" id="spot-lab" type="button" aria-label="See how Image Converter Pro works"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.2" /><path d="M12 3v5.8M12 15.2V21M3 12h5.8M15.2 12H21" opacity=".55" /></svg></i><span>Contact sheet · how it works</span></button>
   </div>
 
-  <!-- the photo lab's contact sheet: Image Converter Pro, one frame at a time -->
-  <div class="lab" id="lab" role="dialog" aria-modal="true" aria-label="Image Converter Pro: how it works" hidden>
-    <div class="lab-safelight" aria-hidden="true"></div>
-    <button class="lab-close" id="lab-close" type="button" aria-label="Close the contact sheet">&times;</button>
-    <div class="lab-stage">
-      <figure class="lab-print" id="lab-print">
-        <img id="lab-img" alt="" decoding="async">
-        <figcaption><span id="lab-cap"></span><span>Image Converter Pro</span></figcaption>
-      </figure>
-      <div class="lab-text">
-        <p class="eyebrow" id="lab-step" style="--c:#ff3fa8"></p>
-        <h3 id="lab-title"></h3>
-        <p id="lab-body"></p>
-        <div class="lab-nav">
-          <button type="button" id="lab-prev" aria-label="Previous frame">&larr;</button>
-          <span id="lab-count" aria-live="polite"></span>
-          <button type="button" id="lab-next" aria-label="Next frame">&rarr;</button>
-        </div>
-        <a class="lab-link" href="https://github.com/samathri/image-converter-pro" target="_blank" rel="noopener noreferrer">View the code on GitHub &rarr;</a>
-      </div>
-    </div>
-    <div class="lab-strip" id="lab-strip" aria-label="Frames"></div>
-  </div>
   <div class="ticket" id="ticket" role="dialog" aria-label="Order noodles: my skills as four dishes">
     <button class="paper-close" id="ticket-close" type="button" aria-label="Close the order pad">&times;</button>
     <p class="eyebrow">Order pad · my skills, cooked to order</p>
@@ -180,6 +173,6 @@
     </div>
   </div>
 
-  <script type="module" src="main.js?v=20261025b"></script>
+  <script type="module" src="main.js?v=20261026"></script>
 </body>
 </html>

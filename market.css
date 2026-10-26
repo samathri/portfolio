@@ -123,38 +123,33 @@ body.at-stall:not(.cooking) .spot.vis { opacity: 1; pointer-events: auto; }
 .proj-dots li.done { background: rgba(255, 154, 60, 0.45); }
 .proj-dots li.on { background: var(--orange); box-shadow: 0 0 10px var(--orange); }
 
-/* ---------- the photo lab's contact sheet: a big print, the note beside it, and the film strip along the bottom ---------- */
+/* ---------- the photo lab's contact sheet: the camera comes in on the lightbox, the frame develops on it, and the note sits across the alley with the controls under it ---------- */
 html.lab-open { overflow: hidden; }
 body.lab-open .spots { display: none; }
-.lab { position: fixed; inset: 0; z-index: 6; display: grid; grid-template-rows: minmax(0, 1fr) auto; background: #07060a; color: var(--ink); }
-.lab[hidden] { display: none; }
-.lab-safelight { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(60% 45% at 50% -10%, rgba(255, 63, 168, 0.22), transparent 70%); }
-.lab-close { position: absolute; top: 18px; right: 20px; z-index: 2; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--ink); font-size: 1.5rem; line-height: 1; display: grid; place-items: center; transition: background 0.2s ease, transform 0.3s var(--ease); }
-.lab-close:hover { background: rgba(255, 255, 255, 0.14); transform: rotate(90deg); }
-.lab-stage { position: relative; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.6fr); gap: clamp(20px, 4vw, 56px); align-items: center; padding: clamp(18px, 4vh, 44px) clamp(20px, 5vw, 72px) 12px; min-height: 0; }
-.lab-print { position: relative; margin: 0; justify-self: center; max-width: 100%; background: #f4f2ee; padding: 10px 10px 34px; box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7); transform: rotate(-0.6deg); }
-.lab-print img { display: block; max-width: 100%; max-height: min(66vh, 760px); width: auto; height: auto; background: #111; }
-.lab-print figcaption { position: absolute; left: 14px; right: 14px; bottom: 9px; display: flex; justify-content: space-between; gap: 12px; font: 600 0.7rem var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: #6b6257; }
-.lab-print.swap { animation: lab-swap 0.45s var(--ease); }
-@keyframes lab-swap { from { opacity: 0; transform: rotate(-0.6deg) translateY(16px); } }
-.lab .eyebrow::before { width: 28px; margin-right: 10px; }
-.lab-text h3 { margin: 10px 0 10px; font-size: clamp(1.6rem, 3vw, 2.4rem); line-height: 1; }
-.lab-text p { color: var(--ink-2); }
-.lab-nav { display: flex; align-items: center; gap: 12px; margin-top: 22px; }
-.lab-nav button { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--ink); font-size: 1.1rem; transition: background 0.2s ease, transform 0.3s var(--ease); }
-.lab-nav button:hover { background: rgba(255, 63, 168, 0.25); transform: translateY(-2px); }
-.lab-nav span { font: 700 0.8rem var(--display); letter-spacing: 0.18em; color: var(--muted); }
-.lab-link { display: inline-block; margin-top: 18px; font: 700 0.78rem var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--pink); text-decoration: none; border-bottom: 1px solid rgba(255, 63, 168, 0.4); padding-bottom: 2px; }
-.lab-link:hover { border-color: var(--pink); }
-/* the strip is film: a row of sprocket holes along the top and bottom edges */
-.lab-strip { position: relative; display: flex; gap: 10px; overflow-x: auto; padding: 22px clamp(20px, 5vw, 72px); border-top: 1px solid var(--line); scrollbar-width: none;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0 6px, transparent 6px) 0 7px / 22px 7px repeat-x, linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0 6px, transparent 6px) 0 calc(100% - 7px) / 22px 7px repeat-x, #0b0a0e; }
-.lab-strip::-webkit-scrollbar { display: none; }
-.lab-thumb { flex: none; position: relative; width: 132px; aspect-ratio: 16 / 10; padding: 0; border: 2px solid transparent; border-radius: 4px; background: #000; overflow: hidden; opacity: 0.55; transition: opacity 0.25s ease, border-color 0.25s ease, transform 0.3s var(--ease); }
+body.lab-open .proj .proj-text { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.lab-panel { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: center; pointer-events: none; }
+.lab-panel[hidden] { display: none; }
+.lab-note { grid-column: 2; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; justify-items: start; pointer-events: auto; animation: lab-in 0.7s var(--ease); }
+@keyframes lab-in { from { opacity: 0; transform: translateY(28px); } }
+.lab-note .eyebrow::before { width: 28px; margin-right: 10px; }
+.lab-note h3 { font-size: clamp(1.7rem, 3.2vw, 2.6rem); line-height: 1; }
+.lab-note p:not(.eyebrow) { color: var(--ink-2); max-width: 46ch; }
+/* the strip is film: eight small frames with sprocket holes along both edges */
+.lab-strip { display: flex; flex-wrap: wrap; gap: 6px; padding: 9px 0; margin-top: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.45) 0 4px, transparent 4px) 0 0 / 13px 4px repeat-x, linear-gradient(90deg, rgba(255, 255, 255, 0.45) 0 4px, transparent 4px) 0 100% / 13px 4px repeat-x; }
+.lab-thumb { position: relative; width: 60px; aspect-ratio: 16 / 10; padding: 0; border: 2px solid transparent; border-radius: 3px; background: #000; overflow: hidden; opacity: 0.5; transition: opacity 0.25s ease, border-color 0.25s ease, transform 0.3s var(--ease); }
 .lab-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.lab-thumb b { position: absolute; left: 7px; bottom: 5px; font: 700 0.66rem var(--display); letter-spacing: 0.14em; color: var(--pink); text-shadow: 0 1px 2px #000; }
+.lab-thumb b { position: absolute; left: 4px; bottom: 2px; font: 700 0.58rem var(--display); letter-spacing: 0.1em; color: var(--pink); text-shadow: 0 1px 2px #000; }
 .lab-thumb:hover { opacity: 0.9; }
-.lab-thumb.on { opacity: 1; border-color: var(--pink); transform: translateY(-3px); }
+.lab-thumb.on { opacity: 1; border-color: var(--pink); transform: translateY(-2px); }
+.lab-nav { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.lab-arrow { width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid var(--pink); background: rgba(255, 63, 168, 0.12); color: var(--ink); font-size: 1.2rem; line-height: 1; transition: background 0.2s ease, transform 0.3s var(--ease); }
+.lab-arrow:hover { background: var(--pink); color: #1a0d04; transform: translateY(-2px); }
+.lab-nav span { font: 700 0.84rem var(--display); letter-spacing: 0.18em; color: var(--muted); min-width: 64px; text-align: center; }
+.lab-close { margin-left: 8px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--ink-2); font: 700 0.78rem var(--display); letter-spacing: 0.14em; text-transform: uppercase; transition: background 0.2s ease, color 0.2s ease; }
+.lab-close:hover { background: rgba(255, 255, 255, 0.12); color: var(--ink); }
+.lab-link { font: 700 0.74rem var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--pink); text-decoration: none; border-bottom: 1px solid rgba(255, 63, 168, 0.4); padding-bottom: 2px; }
+.lab-link:hover { border-color: var(--pink); }
 
 /* ---------- contact: text in the left three quarters, the booth in the right quarter ---------- */
 .inner.contact-inner { width: min(1140px, 100%); grid-template-columns: 3fr 1fr; gap: 24px; align-items: center; }
@@ -190,16 +185,13 @@ body.lab-open .spots { display: none; }
   .proj-no { font-size: 2.6rem; }
   .inner.contact-inner { grid-template-columns: 1fr; }
   .booth-col { display: none; }
-  /* the contact sheet stacks: the print, the note under it, the strip along the bottom */
-  .lab-stage { grid-template-columns: minmax(0, 1fr); align-content: start; overflow-y: auto; padding: 68px 18px 14px; }
-  .lab-print { transform: none; padding: 6px 6px 28px; justify-self: stretch; }
-  .lab-print img { max-height: 44vh; margin: 0 auto; }
-  .lab-print figcaption { left: 10px; right: 10px; bottom: 7px; font-size: 0.62rem; }
-  .lab-text h3 { font-size: 1.5rem; }
-  .lab-text p { font-size: 0.98rem; }
-  .lab-nav { margin-top: 14px; }
-  .lab-strip { padding: 14px 18px; gap: 8px; }
-  .lab-thumb { width: 96px; }
+  /* the contact sheet on a phone: the lightbox fills the top of the screen, the note and the controls sit under it */
+  .lab-panel { grid-template-columns: minmax(0, 1fr); align-items: end; }
+  .lab-note { grid-column: 1; gap: 10px; }
+  .lab-note h3 { font-size: 1.55rem; }
+  .lab-note p:not(.eyebrow) { font-size: 0.95rem; }
+  .lab-strip { display: none; }
+  .lab-close { margin-left: 0; }
 }
 @media (max-width: 640px) {
   .page { padding: 10vh 18px; }

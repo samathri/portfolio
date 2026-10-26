@@ -175,14 +175,32 @@ export function buildScene() {
     ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.045}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.textAlign = 'center'; ctx.fillText('LIVE \u00b7 OPEN THE SITE', mx + mw / 2, h * 0.95);
   };
 
-  // the photo lab's lightbox: the name, what it is, and a strip of four frames from the app, repainted as each frame loads
+  // the photo lab's lightbox: the name, what it is, and a strip of four frames from the app, repainted as each frame loads.
+  // While the contact sheet is open it shows one frame at a time, developing in from the safelight's red.
   const labImages = LAB_PRINTS.strip.map(([src]) => { const im = new Image(); im.decoding = 'async'; im.dataset.src = src; return im; });
-  const labBoardPainter = (pr) => (ctx, w, h) => {
+  const labView = { on: false, img: null, no: '', title: '', a: 1 };   // a: how far the frame on show has developed, 0 (red) to 1
+  const labBoardPainter = (pr) => (ctx, w, h, t = 0) => {
     const c = K.hex(pr.color);
     ctx.fillStyle = '#120d08'; ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = 'rgba(255,255,255,0.03)'; for (let i = 0; i < 500; i += 1) ctx.fillRect(Math.random() * w, Math.random() * h, 3, 3);
     ctx.strokeStyle = c; ctx.lineWidth = 5; ctx.strokeRect(12, 12, w - 24, h - 24);
     ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    if (labView.img) {
+      // one frame, mounted on paper: the print fades up from red to full over the first moments, like paper in the developer
+      const a = K.smooth(labView.a);
+      const mx = w * 0.035; const my = h * 0.055; const mw = w * 0.93; const mh = h * 0.8;
+      ctx.fillStyle = '#f4f2ee'; ctx.fillRect(mx, my, mw, mh);
+      const ix = w * 0.06; const iy = h * 0.085; const iw = w * 0.88; const ih = h * 0.67;
+      ctx.fillStyle = '#111115'; ctx.fillRect(ix, iy, iw, ih);
+      const im = labView.img; const s = Math.min(iw / im.naturalWidth, ih / im.naturalHeight); const dw = im.naturalWidth * s; const dh = im.naturalHeight * s;
+      ctx.globalAlpha = Math.max(0.05, a); ctx.drawImage(im, ix + (iw - dw) / 2, iy + (ih - dh) / 2, dw, dh); ctx.globalAlpha = 1;
+      ctx.fillStyle = `rgba(229,35,43,${(0.6 * (1 - a)).toFixed(3)})`; ctx.fillRect(ix, iy, iw, ih);
+      ctx.fillStyle = '#6b6257'; ctx.font = `700 ${h * 0.036}px ${K.FONT}`; ctx.letterSpacing = '3px';
+      ctx.fillText(`FRAME ${labView.no}`, ix, h * 0.81); ctx.textAlign = 'right'; ctx.fillText('IMAGE CONVERTER PRO', ix + iw, h * 0.81); ctx.textAlign = 'left';
+      ctx.fillStyle = c; ctx.font = `800 ${h * 0.06}px ${K.FONT}`; ctx.letterSpacing = '4px'; ctx.fillText(labView.title, w * 0.05, h * 0.925, w * 0.62);
+      ctx.textAlign = 'right'; ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.04}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText(`${labView.no} OF 08`, w * 0.95, h * 0.925); ctx.textAlign = 'left';
+      return;
+    }
     ctx.fillStyle = c; ctx.font = `800 ${h * 0.17}px ${K.FONT}`; ctx.letterSpacing = '2px'; ctx.fillText(pr.no, w * 0.05, h * 0.16);
     ctx.fillStyle = '#f4ecd8'; ctx.font = `800 ${h * 0.1}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText(pr.name, w * 0.16, h * 0.125, w * 0.5);
     ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.045}px ${K.FONT}`; ctx.letterSpacing = '4px'; ctx.fillText(pr.kind, w * 0.16, h * 0.225, w * 0.5);
@@ -565,7 +583,9 @@ export function buildScene() {
       for (let i = 0; i < steams.length; i += 1) { const s = steams[i]; for (let j = 0; j < s.n; j += 1) { s.arr[j * 3 + 1] += dt * 0.35; s.arr[j * 3] += Math.sin(t * 2 + j) * dt * 0.05; if (s.arr[j * 3 + 1] > s.y1) { s.arr[j * 3 + 1] = s.y0; s.arr[j * 3] = s.x0 + (Math.random() - 0.5) * s.spread; s.arr[j * 3 + 2] = s.z0 + (Math.random() - 0.5) * s.spread; } } s.pts.geometry.attributes.position.needsUpdate = true; }
       for (let i = 0; i < fires.length; i += 1) fires[i].intensity = (1.2 + 0.9 * (0.5 + 0.5 * Math.sin(t * 21 + i * 3)) * (0.6 + 0.4 * Math.sin(t * 6.1 + i))) * (fires[i].userData.boost || 1);
       for (let i = 0; i < labPrints.length; i += 1) { const p = labPrints[i]; p.group.rotation.z = Math.sin(t * 0.9 + p.seed) * 0.035; p.group.rotation.x = Math.sin(t * 0.6 + p.seed) * 0.02; }
-      if (labLamp) labLamp.intensity = 1.1 + 0.2 * Math.sin(t * 7.3) * Math.sin(t * 1.9);
+      // the safelight: a flicker normally; while a frame develops on the lightbox it swells and breathes
+      if (labLamp) labLamp.intensity = 1.1 + 0.2 * Math.sin(t * 7.3) * Math.sin(t * 1.9) + (labView.on ? 1.2 + 0.6 * Math.sin(t * 2.4) : 0);
+      if (labView.img && labStall && labView.a < 1) { labView.a = Math.min(1, labView.a + dt / 0.7); labStall.userData.board.redraw(t); }   // counted in frames, so a paused tab never leaves it half developed
       if (cooking) {
         // an order: the camera comes in over the bench, each ingredient bowl is picked up and tipped into the pan,
         // the noodles go in, the fire flares, a stir, a burst of steam, then the bowl pops up on the counter
@@ -598,7 +618,8 @@ export function buildScene() {
           k.served.group.visible = true; k.served.group.scale.setScalar(Math.max(0.001, sc)); if (k.tag) k.tag.visible = true;
         }
         if (u >= c.total) { const done = c.onDone; cooking = null; resetKitchen(); cam.w = 0; if (done) done(); }
-      } else if (cam.w > 0) cam.w = Math.max(0, cam.w - dt * 1.5);
+      } else if (labView.on) cam.w = Math.min(1, cam.w + dt * 1.1);   // the contact sheet: close on the lab's lightbox
+      else if (cam.w > 0) cam.w = Math.max(0, cam.w - dt * 1.5);
       rain.uniforms.uT.value = t;
       // the weather: the rain eases in or out, the puddles fade and the asphalt dries
       rainK += (rainTarget - rainK) * (1 - Math.exp(-1.2 * dt));
@@ -631,5 +652,21 @@ export function buildScene() {
       return total;
     },
     abortCook() { if (!cooking) return; cooking = null; resetKitchen(); },
+    // the contact sheet: the camera comes in on the lab's lightbox (set to the left of the frame on a wide screen so the
+    // note fits beside it; straight on and higher on a phone so the note fits below), and the lightbox shows one frame
+    labMode(on, { narrow = false } = {}) {
+      if (!labStall) return;
+      labView.on = on;
+      if (on) {
+        labStall.updateMatrixWorld(true);
+        if (narrow) { labStall.localToWorld(cam.eye.set(0.5, 1.5, 2.7)); labStall.localToWorld(cam.look.set(0.5, 1.42, -0.55)); }
+        else { labStall.localToWorld(cam.eye.set(1.24, 1.82, 2.1)); labStall.localToWorld(cam.look.set(1.24, 1.78, -0.55)); }
+      } else { labView.img = null; labStall.userData.board.redraw(0); }
+    },
+    labFrame(img, { no = '', title = '' } = {}) {
+      if (!labStall) return;
+      labView.img = img; labView.no = no; labView.title = title; labView.a = 0;
+      labStall.userData.board.redraw(lastT);
+    },
   };
 }

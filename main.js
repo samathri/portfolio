@@ -248,8 +248,9 @@ const LAB_FRAMES = [
   { img: 'img/icp/08-lab-console.jpg', thumb: 'img/icp/t-08-lab-console.jpg', step: 'Admin', title: 'The lab console', alt: 'The admin overview: payments to review, active Pro users, registered users, approved revenue, and Pro plans ending this week',
     text: 'Review payments and receipts, grant or revoke Pro, see whose plan ends this week, run promotions, and set the price and bank details. A daily job cleans temporary files and sends expiry reminders.' },
 ];
-const lab = $('#lab'); const labImg = $('#lab-img'); const labCap = $('#lab-cap'); const labStep = $('#lab-step'); const labTitle = $('#lab-title'); const labBody = $('#lab-body');
-const labCount = $('#lab-count'); const labStrip = $('#lab-strip'); const labPrint = $('#lab-print');
+// The camera comes in on the lab's lightbox, the frame develops on it, and this note sits across the alley.
+const lab = $('#lab'); const labStep = $('#lab-step'); const labTitle = $('#lab-title'); const labBody = $('#lab-body');
+const labCount = $('#lab-count'); const labStrip = $('#lab-strip');
 let labOpen = false; let labIdx = 0;
 const pad2 = (n) => String(n).padStart(2, '0');
 const labThumbs = LAB_FRAMES.map((f, i) => {
@@ -259,26 +260,35 @@ const labThumbs = LAB_FRAMES.map((f, i) => {
   b.append(im, no); b.addEventListener('click', () => showFrame(i)); labStrip.appendChild(b);
   return b;
 });
+// the full-size frames, loaded once and kept; the lightbox repaints when the one on show arrives
+const labFrameImage = (f) => {
+  if (!f.el) { f.el = new Image(); f.el.decoding = 'async'; f.el.src = f.img; }
+  return f.el;
+};
 function showFrame(i) {
   labIdx = (i + LAB_FRAMES.length) % LAB_FRAMES.length;
-  const f = LAB_FRAMES[labIdx];
-  labImg.src = f.img; labImg.alt = f.alt; labCap.textContent = `Frame ${pad2(labIdx + 1)} · ${f.step}`;
-  labStep.textContent = `${f.step} · frame ${pad2(labIdx + 1)} of ${pad2(LAB_FRAMES.length)}`; labTitle.textContent = f.title; labBody.textContent = f.text;
-  labCount.textContent = `${pad2(labIdx + 1)} / ${pad2(LAB_FRAMES.length)}`;
+  const f = LAB_FRAMES[labIdx]; const no = pad2(labIdx + 1);
+  labStep.textContent = `${f.step} · frame ${no} of ${pad2(LAB_FRAMES.length)}`; labTitle.textContent = f.title; labBody.textContent = f.text;
+  labCount.textContent = `${no} / ${pad2(LAB_FRAMES.length)}`;
   labThumbs.forEach((t, k) => t.classList.toggle('on', k === labIdx));
-  labThumbs[labIdx].scrollIntoView({ block: 'nearest', inline: 'center', behavior: reduced ? 'auto' : 'smooth' });
-  labPrint.classList.remove('swap'); void labPrint.offsetWidth; labPrint.classList.add('swap');
+  const im = labFrameImage(f);
+  const put = () => { if (labOpen && labIdx === i % LAB_FRAMES.length || labIdx === (i + LAB_FRAMES.length) % LAB_FRAMES.length) market.labFrame(im, { no, title: f.title.toUpperCase() }); };
+  if (im.complete && im.naturalWidth) put(); else im.addEventListener('load', put, { once: true });
+  LAB_FRAMES.forEach((g, k) => { if (k === labIdx + 1 || k === labIdx - 1) labFrameImage(g); });   // the neighbours, ready before they are asked for
 }
 function openLab(i = 0) {
   if (labOpen) return;
   labOpen = true; lab.hidden = false; document.documentElement.classList.add('lab-open'); document.body.classList.add('lab-open');
-  showFrame(i); $('#lab-close').focus();
+  market.labMode(true, { narrow: narrow() });
+  showFrame(i); $('#lab-next').focus({ preventScroll: true });
 }
 function closeLab() {
   if (!labOpen) return;
   labOpen = false; lab.hidden = true; document.documentElement.classList.remove('lab-open'); document.body.classList.remove('lab-open');
+  market.labMode(false);
   $('#lab-open').focus({ preventScroll: true });
 }
+window.addEventListener('resize', () => { if (labOpen) market.labMode(true, { narrow: narrow() }); });
 $('#lab-open').addEventListener('click', () => openLab(0));
 $('#spot-lab').addEventListener('click', () => openLab(0));
 $('#lab-close').addEventListener('click', closeLab);
