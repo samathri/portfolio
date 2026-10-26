@@ -127,7 +127,7 @@ body.at-stall:not(.cooking) .spot.vis { opacity: 1; pointer-events: auto; }
 /* (no overflow lock on the root while it is open: that would make the body the scroller and un-pin the sticky frame the note lives in; the page is held still by the wheel, key and touch handlers instead) */
 body.lab-open .spots { display: none; }
 body.lab-open .proj .proj-text { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-.lab-panel { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: center; pointer-events: none; }
+.lab-panel { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 40px; align-items: center; pointer-events: none; }   /* the lightbox takes the left six tenths */
 .lab-panel[hidden] { display: none; }
 .lab-note { grid-column: 2; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; justify-items: start; pointer-events: auto; animation: lab-in 0.7s var(--ease); }
 @keyframes lab-in { from { opacity: 0; transform: translateY(28px); } }
@@ -137,7 +137,7 @@ body.lab-open .proj .proj-text { opacity: 0; pointer-events: none; transition: o
 /* the strip is film: eight small frames with sprocket holes along both edges */
 .lab-strip { display: flex; flex-wrap: wrap; gap: 6px; padding: 9px 0; margin-top: 2px;
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.45) 0 4px, transparent 4px) 0 0 / 13px 4px repeat-x, linear-gradient(90deg, rgba(255, 255, 255, 0.45) 0 4px, transparent 4px) 0 100% / 13px 4px repeat-x; }
-.lab-thumb { position: relative; width: 60px; aspect-ratio: 16 / 10; padding: 0; border: 2px solid transparent; border-radius: 3px; background: #000; overflow: hidden; opacity: 0.5; transition: opacity 0.25s ease, border-color 0.25s ease, transform 0.3s var(--ease); }
+.lab-thumb { position: relative; width: 54px; aspect-ratio: 16 / 10; padding: 0; border: 2px solid transparent; border-radius: 3px; background: #000; overflow: hidden; opacity: 0.5; transition: opacity 0.25s ease, border-color 0.25s ease, transform 0.3s var(--ease); }
 .lab-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .lab-thumb b { position: absolute; left: 4px; bottom: 2px; font: 700 0.58rem var(--display); letter-spacing: 0.1em; color: var(--pink); text-shadow: 0 1px 2px #000; }
 .lab-thumb:hover { opacity: 0.9; }

@@ -52,7 +52,7 @@ export const PROJECTS = [
 ];
 // the photo lab's prints: small copies of Image Converter Pro's screens, four on the lightbox strip and three pegged under the awning
 export const LAB_PRINTS = {
-  strip: [['img/icp/t-01-load.jpg', 'LOAD'], ['img/icp/t-02-contact-sheet.jpg', 'SHEET'], ['img/icp/t-05-pro.jpg', 'PRO'], ['img/icp/t-08-lab-console.jpg', 'CONSOLE']],
+  strip: [['img/icp/t-01-load.jpg', 'LOAD'], ['img/icp/t-02-contact-sheet.jpg', 'SHEET'], ['img/icp/t-05-pro.jpg', 'PRO'], ['img/icp/t-08-admin-overview.jpg', 'CONSOLE']],
   pegged: ['img/icp/t-04-free-roll.jpg', 'img/icp/t-06-pro-pass.jpg', 'img/icp/t-07-accounts.jpg'],
 };
 // what the noodle bar cooks to order: the four courses of the stack, and the skills are the ingredients
@@ -178,7 +178,7 @@ export function buildScene() {
   // the photo lab's lightbox: the name, what it is, and a strip of four frames from the app, repainted as each frame loads.
   // While the contact sheet is open it shows one frame at a time, developing in from the safelight's red.
   const labImages = LAB_PRINTS.strip.map(([src]) => { const im = new Image(); im.decoding = 'async'; im.dataset.src = src; return im; });
-  const labView = { on: false, img: null, no: '', title: '', a: 1 };   // a: how far the frame on show has developed, 0 (red) to 1
+  const labView = { on: false, img: null, no: '', title: '', total: '08', a: 1 };   // a: how far the frame on show has developed, 0 (red) to 1
   const labBoardPainter = (pr) => (ctx, w, h, t = 0) => {
     const c = K.hex(pr.color);
     ctx.fillStyle = '#120d08'; ctx.fillRect(0, 0, w, h);
@@ -194,12 +194,18 @@ export function buildScene() {
       ctx.fillStyle = '#111115'; ctx.fillRect(ix, iy, iw, ih);
       const im = labView.img; const s = Math.min(iw / im.naturalWidth, ih / im.naturalHeight); const dw = im.naturalWidth * s; const dh = im.naturalHeight * s;
       ctx.imageSmoothingQuality = 'high';
-      ctx.globalAlpha = Math.max(0.05, a); ctx.drawImage(im, ix + (iw - dw) / 2, iy + (ih - dh) / 2, dw, dh); ctx.globalAlpha = 1;
+      ctx.globalAlpha = Math.max(0.05, a);
+      if (dw < iw - 2 || dh < ih - 2) {
+        // a tall or wide crop: the same picture, blown up and blurred, fills the rest of the mount behind it
+        const cs = Math.max(iw / im.naturalWidth, ih / im.naturalHeight); const cw = im.naturalWidth * cs; const ch = im.naturalHeight * cs;
+        ctx.save(); ctx.beginPath(); ctx.rect(ix, iy, iw, ih); ctx.clip(); ctx.filter = 'blur(28px) brightness(0.45)'; ctx.drawImage(im, ix + (iw - cw) / 2, iy + (ih - ch) / 2, cw, ch); ctx.restore();
+      }
+      ctx.drawImage(im, ix + (iw - dw) / 2, iy + (ih - dh) / 2, dw, dh); ctx.globalAlpha = 1;
       ctx.fillStyle = `rgba(229,35,43,${(0.6 * (1 - a)).toFixed(3)})`; ctx.fillRect(ix, iy, iw, ih);
       ctx.fillStyle = '#6b6257'; ctx.font = `700 ${h * 0.034}px ${K.FONT}`; ctx.letterSpacing = '3px';
       ctx.fillText(`FRAME ${labView.no}`, ix, h * 0.84); ctx.textAlign = 'right'; ctx.fillText('IMAGE CONVERTER PRO', ix + iw, h * 0.84); ctx.textAlign = 'left';
       ctx.fillStyle = c; ctx.font = `800 ${h * 0.056}px ${K.FONT}`; ctx.letterSpacing = '4px'; ctx.fillText(labView.title, w * 0.05, h * 0.945, w * 0.62);
-      ctx.textAlign = 'right'; ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.038}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText(`${labView.no} OF 08`, w * 0.95, h * 0.945); ctx.textAlign = 'left';
+      ctx.textAlign = 'right'; ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.038}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText(`${labView.no} OF ${labView.total}`, w * 0.95, h * 0.945); ctx.textAlign = 'left';
       return;
     }
     ctx.fillStyle = c; ctx.font = `800 ${h * 0.17}px ${K.FONT}`; ctx.letterSpacing = '2px'; ctx.fillText(pr.no, w * 0.05, h * 0.16);
@@ -207,7 +213,7 @@ export function buildScene() {
     ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.045}px ${K.FONT}`; ctx.letterSpacing = '4px'; ctx.fillText(pr.kind, w * 0.16, h * 0.225, w * 0.5);
     ctx.textAlign = 'right';
     ctx.fillStyle = c; ctx.font = `800 ${h * 0.05}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText('SEE THE CONTACT SHEET', w * 0.95, h * 0.125);
-    ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.04}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText('8 FRAMES · HOW IT WORKS', w * 0.95, h * 0.205);
+    ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.04}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText(`${labView.total} FRAMES · HOW IT WORKS`, w * 0.95, h * 0.205);
     ctx.textAlign = 'left';
     // the strip: four frames, sprocket holes above and below
     const y0 = h * 0.34; const fh = h * 0.42; const gap = w * 0.02; const fw = (w * 0.9 - gap * 3) / 4;
@@ -399,7 +405,7 @@ export function buildScene() {
       // a lit board hung on two chains from the awning bar, big enough to read from the alley: the menu, a project's board, or the lab's lightbox (set right, so the prints hang clear of it)
       const bw = bigMenu ? 2.7 : lab ? 2.0 : 1.7; const bh = bigMenu ? 1.3 : lab ? 1.15 : 1.05; const bx = lab ? 0.5 : 0; const topY = 1.85 + bh / 2;
       // the lab's lightbox is painted at a higher resolution and kept matte, since the camera comes right up to it and the lamps above would otherwise glare on it
-      const board = K.screen(bw, bh, big, { res: lab ? 1100 : bigMenu ? 760 : 512, glow: color, glowScale: 1.04, intensity: 1.45 });
+      const board = K.screen(bw, bh, big, { res: lab ? 1400 : bigMenu ? 760 : 512, glow: color, glowScale: 1.04, intensity: 1.45 });
       if (lab) { board.mesh.material.roughness = 1; board.mesh.material.metalness = 0; board.tex.anisotropy = 8; }
       board.group.position.set(bx, 1.85, -0.55); g.add(board.group); g.userData.board = board;
       g.add(K.box(bw + 0.1, bh + 0.1, 0.06, DARKWOOD, bx, 1.85, -0.59));
@@ -663,14 +669,15 @@ export function buildScene() {
       labView.on = on;
       if (on) {
         labStall.updateMatrixWorld(true);
-        if (narrow) { labStall.localToWorld(cam.eye.set(0.5, 1.5, 2.7)); labStall.localToWorld(cam.look.set(0.5, 1.42, -0.55)); }
-        else { labStall.localToWorld(cam.eye.set(1.24, 1.82, 2.1)); labStall.localToWorld(cam.look.set(1.24, 1.78, -0.55)); }
+        if (narrow) { labStall.localToWorld(cam.eye.set(0.5, 1.5, 2.5)); labStall.localToWorld(cam.look.set(0.5, 1.42, -0.55)); }
+        else { labStall.localToWorld(cam.eye.set(1.18, 1.82, 1.85)); labStall.localToWorld(cam.look.set(1.18, 1.8, -0.55)); }   // close: the lightbox takes about six tenths of the width
       } else { labView.img = null; labStall.userData.board.redraw(0); }
     },
-    labFrame(img, { no = '', title = '' } = {}) {
+    labFrame(img, { no = '', title = '', total = labView.total } = {}) {
       if (!labStall) return;
-      labView.img = img; labView.no = no; labView.title = title; labView.a = 0;
+      labView.img = img; labView.no = no; labView.title = title; labView.total = total; labView.a = 0;
       labStall.userData.board.redraw(lastT);
     },
+    labTotal(n) { labView.total = n; if (labStall && !labView.img) labStall.userData.board.redraw(0); },
   };
 }

@@ -238,7 +238,7 @@ const LAB_FRAMES = [
   { img: 'img/icp/02-contact-sheet.jpg', thumb: 'img/icp/t-02-contact-sheet.jpg', step: 'Step 02', title: 'The contact sheet', alt: 'Five uploaded photos shown as tilted prints, each with its file name and size',
     text: 'Each upload becomes a print with its name and size. Take one off the sheet, or clear the roll and start again.' },
   { img: 'img/icp/03-develop.jpg', thumb: 'img/icp/t-03-develop.jpg', step: 'Step 03', title: 'The recipe, then develop', alt: 'The recipe panel after developing: formats, target size, and a notice that the zip is downloading',
-    text: 'Pick the output formats and a target size per image; the equation shows sources times formats. Files go straight to storage, the server converts them with Sharp and searches the quality setting until each one fits, and a single file or a zip downloads.' },
+    text: 'Pick the output formats and a target size per image; the equation shows sources times formats. Files go straight to storage, the server converts them with Sharp and searches the quality setting until each one fits, and a single file or a zip downloads. Here, ten files came back as one zip.' },
   { img: 'img/icp/04-free-roll.jpg', thumb: 'img/icp/t-04-free-roll.jpg', step: 'Free tier', title: 'Three free rolls', alt: 'A contact sheet with seven prints: the last two are locked as Pro frames and a banner says a free roll holds five',
     text: 'Free users get three rolls of five images, counted per browser, per account and per IP address, so clearing cookies or opening a new account does not reset it. Extra prints lock as Pro frames.' },
   { img: 'img/icp/05-pro.jpg', thumb: 'img/icp/t-05-pro.jpg', step: 'Pro', title: 'The Pro darkroom', alt: 'The paywall: a film strip of the user’s photos over a card listing the monthly plan',
@@ -247,8 +247,14 @@ const LAB_FRAMES = [
     text: 'One to twelve months, with longer-plan discounts, sale campaigns and promo codes on top. Pay by card, PayPal, or a bank transfer with a receipt that an admin approves.' },
   { img: 'img/icp/07-accounts.jpg', thumb: 'img/icp/t-07-accounts.jpg', step: 'Accounts', title: 'Join the darkroom', alt: 'The create-account dialog with name, email and password fields',
     text: 'Sign up with an email address and a six-digit code, or with Google. Reset a password by emailed code. Pro users get an invite link: every five friends who join take five percent off the next payment.' },
-  { img: 'img/icp/08-lab-console.jpg', thumb: 'img/icp/t-08-lab-console.jpg', step: 'Admin', title: 'The lab console', alt: 'The admin overview: payments to review, active Pro users, registered users, approved revenue, and Pro plans ending this week',
-    text: 'Review payments and receipts, grant or revoke Pro, see whose plan ends this week, run promotions, and set the price and bank details. A daily job cleans temporary files and sends expiry reminders.' },
+  { img: 'img/icp/08-admin-overview.jpg', thumb: 'img/icp/t-08-admin-overview.jpg', step: 'Admin', title: 'The lab console', alt: 'The admin overview: payments to review, active Pro users, registered users, approved revenue, and the queue waiting for review',
+    text: 'The admin side opens on an overview: payments waiting for review, active Pro users, revenue approved this month, and whose Pro plan ends in the next seven days. It also nags until the bank details are filled in, since users cannot pay without them.' },
+  { img: 'img/icp/09-admin-promotions.jpg', thumb: 'img/icp/t-09-admin-promotions.jpg', step: 'Admin', title: 'Promotions', alt: 'The promotions page: longer-plan discounts for three, six and twelve months, and a form to create a sale campaign',
+    text: 'Longer-plan discounts are always on. Sale campaigns take a percentage off every plan while they run and put a banner at the top of the app. Promo codes carry a percentage or an amount, an expiry and a usage limit, and a hundred-percent code gives Pro away. The referral reward is set here too.' },
+  { img: 'img/icp/10-admin-users.jpg', thumb: 'img/icp/t-10-admin-users.jpg', step: 'Admin', title: 'Users', alt: 'The users table: plan, expiry, pay reference, free uses, payments, join date, and a control to grant Pro access',
+    text: 'Every account with its plan, expiry date, pay reference, free rolls used and payments made. An admin can grant or revoke Pro for a chosen number of months, make someone an admin, or delete them. The owner account can never be demoted.' },
+  { img: 'img/icp/11-admin-settings.jpg', thumb: 'img/icp/t-11-admin-settings.jpg', step: 'Admin', title: 'Settings', alt: 'The settings page: the monthly price and currency, and the bank transfer details shown to users',
+    text: 'The monthly price and currency, and the bank details users see when they choose to pay by transfer. Card and PayPal show as ready once their keys are in the environment. A daily job cleans up temporary files and sends the expiry reminder emails.' },
 ];
 // The camera comes in on the lab's lightbox, the frame develops on it, and this note sits across the alley.
 const lab = $('#lab'); const labStep = $('#lab-step'); const labTitle = $('#lab-title'); const labBody = $('#lab-body');
@@ -274,7 +280,8 @@ function showFrame(i) {
   labCount.textContent = `${no} / ${pad2(LAB_FRAMES.length)}`;
   labThumbs.forEach((t, k) => t.classList.toggle('on', k === labIdx));
   const im = labFrameImage(f);
-  const put = () => { if (labOpen && labIdx === i % LAB_FRAMES.length || labIdx === (i + LAB_FRAMES.length) % LAB_FRAMES.length) market.labFrame(im, { no, title: f.title.toUpperCase() }); };
+  const put = () => { if (labOpen && labIdx === (i + LAB_FRAMES.length) % LAB_FRAMES.length) market.labFrame(im, { no, title: f.title.toUpperCase(), total: pad2(LAB_FRAMES.length) }); };
+  market.labTotal(pad2(LAB_FRAMES.length));
   if (im.complete && im.naturalWidth) put(); else im.addEventListener('load', put, { once: true });
   LAB_FRAMES.forEach((g, k) => { if (k === labIdx + 1 || k === labIdx - 1) labFrameImage(g); });   // the neighbours, ready before they are asked for
 }
