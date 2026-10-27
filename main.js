@@ -184,12 +184,21 @@ function goTo(i) {
   };
   animId = requestAnimationFrame(tick);
 }
-window.addEventListener('scroll', () => { readScroll(); if (!animating && !lockP) cur = nearestStop(); }, { passive: true });
+window.addEventListener('scroll', () => {
+  if (labOpen && Math.abs(window.scrollY - labScrollY) > 1) { window.scrollTo({ top: labScrollY, behavior: 'instant' }); return; }
+  if (ticket.classList.contains('open') && Math.abs(window.scrollY - kitchenScrollY) > 1) { window.scrollTo({ top: kitchenScrollY, behavior: 'instant' }); return; }
+  readScroll(); if (!animating && !lockP) cur = nearestStop();
+}, { passive: true });
 // one wheel notch (one click of a mouse wheel, or the same distance on a trackpad) moves one stop
 const NOTCH = 60;
 let notchDir = 0; let lastWheel = 0;
 window.addEventListener('wheel', (e) => {
-  if (labOpen) { e.preventDefault(); return; }   // the contact sheet holds the page still
+  if (labOpen) {
+    const note = e.target.closest('.lab-note');
+    if (!note || (e.deltaY < 0 && note.scrollTop <= 0) || (e.deltaY > 0 && note.scrollTop + note.clientHeight >= note.scrollHeight - 1)) e.preventDefault();
+    return;
+  }
+  if (ticket.classList.contains('open')) { if (!e.target.closest('.ticket')) e.preventDefault(); return; }
   if (!stepMode()) return;
   e.preventDefault();
   const now = performance.now();
@@ -203,7 +212,16 @@ window.addEventListener('wheel', (e) => {
   if (Math.abs(wheelAcc) >= NOTCH) { wheelAcc = 0; goTo(cur + dir); }
 }, { passive: false });
 window.addEventListener('keydown', (e) => {
-  if (labOpen) { if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'Home', 'End'].includes(e.key)) e.preventDefault(); return; }   // the contact sheet holds the page still
+  if (labOpen) {
+    if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End'].includes(e.key)) {
+      e.preventDefault(); const note = $('.lab-note');
+      if (e.key === 'Home') note.scrollTop = 0;
+      else if (e.key === 'End') note.scrollTop = note.scrollHeight;
+      else note.scrollTop += (e.key.endsWith('Down') ? 1 : -1) * (e.key.startsWith('Page') ? note.clientHeight * 0.8 : 40);
+    }
+    return;
+  }
+  if (e.target.closest('.ticket.open')) return;
   if (!stepMode() || e.altKey || e.ctrlKey || e.metaKey) return;
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
@@ -218,9 +236,9 @@ window.addEventListener('keydown', (e) => {
 });
 let touchY = null;
 window.addEventListener('touchstart', (e) => { touchY = e.touches[0].clientY; }, { passive: true });
-window.addEventListener('touchmove', (e) => { if ((stepMode() || labOpen) && e.cancelable) e.preventDefault(); }, { passive: false });
+window.addEventListener('touchmove', (e) => { if (e.target.closest('.lab-note, .ticket.open')) return; if ((stepMode() || labOpen || ticket.classList.contains('open')) && e.cancelable) e.preventDefault(); }, { passive: false });
 window.addEventListener('touchend', (e) => {
-  if (!stepMode() || labOpen || touchY === null) return;
+  if (!stepMode() || labOpen || ticket.classList.contains('open') || touchY === null || e.target.closest('.ticket.open')) return;
   const dy = touchY - e.changedTouches[0].clientY; touchY = null;
   if (Math.abs(dy) > 40 && !animating) goTo(cur + (dy > 0 ? 1 : -1));
 });
@@ -233,88 +251,193 @@ const sectionStop = [2, 4, 6, 6 + 2 * nShops];   // about, skills, the first sho
 
 /* ---------- the photo lab's contact sheet: how Image Converter Pro works, one frame at a time ---------- */
 const LAB_FRAMES = [
-  { img: 'img/icp/01-load.jpg', thumb: 'img/icp/t-01-load.jpg', step: 'Step 01', title: 'Load the film', alt: 'The converter with five photos loaded: a drop zone, a box for image URLs, and the recipe panel',
+  { img: 'img/icp/01-load.jpg', thumb: 'img/icp/t-01-load.jpg', step: 'Step 01', title: 'Load the film', alt: 'The converter with five photos loaded: a drop zone, a box for image URLs, and the export settings panel',
     text: 'Drop JPG, PNG, WEBP or AVIF files, browse for them, or paste image URLs one per line. Every file lands on the stack as a print.' },
   { img: 'img/icp/02-contact-sheet.jpg', thumb: 'img/icp/t-02-contact-sheet.jpg', step: 'Step 02', title: 'The contact sheet', alt: 'Five uploaded photos shown as tilted prints, each with its file name and size',
     text: 'Each upload becomes a print with its name and size. Take one off the sheet, or clear the roll and start again.' },
-  { img: 'img/icp/03-develop.jpg', thumb: 'img/icp/t-03-develop.jpg', step: 'Step 03', title: 'The recipe, then develop', alt: 'The recipe panel after developing: formats, target size, and a notice that the zip is downloading',
+  { img: 'img/icp/03-develop.jpg', thumb: 'img/icp/t-03-develop.jpg', step: 'Step 03', title: 'Set the export, then develop', alt: 'The export settings after processing: formats, target size, and a notice that the zip is downloading',
     text: 'Pick the output formats and a target size per image; the equation shows sources times formats. Files go straight to storage, the server converts them with Sharp and searches the quality setting until each one fits, and a single file or a zip downloads. Here, ten files came back as one zip.' },
   { img: 'img/icp/04-free-roll.jpg', thumb: 'img/icp/t-04-free-roll.jpg', step: 'Free tier', title: 'Three free rolls', alt: 'A contact sheet with seven prints: the last two are locked as Pro frames and a banner says a free roll holds five',
     text: 'Free users get three rolls of five images, counted per browser, per account and per IP address, so clearing cookies or opening a new account does not reset it. Extra prints lock as Pro frames.' },
   { img: 'img/icp/05-pro.jpg', thumb: 'img/icp/t-05-pro.jpg', step: 'Pro', title: 'The Pro darkroom', alt: 'The paywall: a film strip of the user’s photos over a card listing the monthly plan',
     text: 'Unlimited conversions and batches of up to fifty. The paywall says exactly what will not fit on a free roll, and offers to develop the first five anyway.' },
-  { img: 'img/icp/06-pro-pass.jpg', thumb: 'img/icp/t-06-pro-pass.jpg', step: 'Payments', title: 'The Pro pass', alt: 'The billing dialog: one to twelve month plans, a promo code field, and a choice of payment method',
+  { img: 'img/icp/06-pro-pass.jpg', thumb: 'img/icp/t-06-pro-pass.jpg', step: 'Payments', title: 'The studio pass', alt: 'The billing dialog: one to twelve month plans, a promo code field, and a choice of payment method',
     text: 'One to twelve months, with longer-plan discounts, sale campaigns and promo codes on top. Pay by card, PayPal, or a bank transfer with a receipt that an admin approves.' },
   { img: 'img/icp/07-accounts.jpg', thumb: 'img/icp/t-07-accounts.jpg', step: 'Accounts', title: 'Join the darkroom', alt: 'The create-account dialog with name, email and password fields',
     text: 'Sign up with an email address and a six-digit code, or with Google. Reset a password by emailed code. Pro users get an invite link: every five friends who join take five percent off the next payment.' },
-  { img: 'img/icp/08-admin-overview.jpg', thumb: 'img/icp/t-08-admin-overview.jpg', step: 'Admin', title: 'The lab console', alt: 'The admin overview: payments to review, active Pro users, registered users, approved revenue, and the queue waiting for review',
-    text: 'The admin side opens on an overview: payments waiting for review, active Pro users, revenue approved this month, and whose Pro plan ends in the next seven days. It also nags until the bank details are filled in, since users cannot pay without them.' },
+  { img: 'img/icp/08-admin-overview.jpg', thumb: 'img/icp/t-08-admin-overview.jpg', step: 'Admin', title: 'The studio console', alt: 'The admin overview: payments to review, active Pro users, registered users, approved revenue, and the queue waiting for review',
+    text: 'The studio’s control room brings membership activity, revenue and payment reviews into one view.',
+    details: [
+      ['At a glance', 'See registered users, active Pro members, payments awaiting review and revenue approved this month. The review queue highlights payments that still need attention.'],
+      ['Payment review', 'Bank-transfer customers submit a receipt for an administrator to check and approve. This gives the studio a manual review step for payments made outside card or PayPal checkout.'],
+      ['Upcoming renewals', 'Track memberships ending within the next seven days. A setup reminder also flags missing bank details so the transfer instructions can be completed.'],
+    ] },
   { img: 'img/icp/09-admin-promotions.jpg', thumb: 'img/icp/t-09-admin-promotions.jpg', step: 'Admin', title: 'Promotions', alt: 'The promotions page: longer-plan discounts for three, six and twelve months, and a form to create a sale campaign',
-    text: 'Longer-plan discounts are always on. Sale campaigns take a percentage off every plan while they run and put a banner at the top of the app. Promo codes carry a percentage or an amount, an expiry and a usage limit, and a hundred-percent code gives Pro away. The referral reward is set here too.' },
+    text: 'Manage studio offers in four ways, from ongoing membership savings to scheduled campaigns.',
+    details: [
+      ['Longer-plan savings', 'Set separate percentage discounts for 3-, 6- and 12-month memberships. These stay active until changed; enter 0 to remove a discount. Sales, promo codes and referral savings apply on top.'],
+      ['Scheduled campaigns', 'Give a sale a name and percentage discount, add optional banner text, and choose optional start and end dates. While active, it discounts every plan and displays a banner across the app.'],
+      ['Promo codes', 'Create a percentage or fixed-amount discount with an expiry and usage limit. A 100% discount code can give away Pro access.'],
+      ['Referral rewards', 'Configure the reward for member invitations here too. This keeps ongoing plan savings, public campaigns, individual codes and referral offers together in the studio console.'],
+    ] },
   { img: 'img/icp/10-admin-users.jpg', thumb: 'img/icp/t-10-admin-users.jpg', step: 'Admin', title: 'Users', alt: 'The users table: plan, expiry, pay reference, free uses, payments, join date, and a control to grant Pro access',
-    text: 'Every account with its plan, expiry date, pay reference, free rolls used and payments made. An admin can grant or revoke Pro for a chosen number of months, make someone an admin, or delete them. The owner account can never be demoted.' },
-  { img: 'img/icp/11-admin-settings.jpg', thumb: 'img/icp/t-11-admin-settings.jpg', step: 'Admin', title: 'Settings', alt: 'The settings page: the monthly price and currency, and the bank transfer details shown to users',
-    text: 'The monthly price and currency, and the bank details users see when they choose to pay by transfer. Card and PayPal show as ready once their keys are in the environment. A daily job cleans up temporary files and sends the expiry reminder emails.' },
+    text: 'Manage the people using the studio, with account activity and membership controls in one table.',
+    details: [
+      ['Member records', 'Review each account’s plan, expiry date, payment reference, free rolls used, payments and join date. These details help explain a member’s current access.'],
+      ['Access controls', 'Grant Pro for a chosen number of months or revoke it when needed. Administrators can also assign admin access or delete an account; the owner account is protected from demotion.'],
+    ] },
+  { img: 'img/icp/11-admin-settings.jpg', thumb: 'img/icp/t-11-admin-settings.jpg', step: 'Admin', title: 'Pricing & payment setup', alt: 'The settings page: the monthly price and currency, and bank, branch, account name and account number fields for bank transfers',
+    text: 'Set the studio’s base pricing and configure how members pay for their Pro pass.',
+    details: [
+      ['Base pricing', 'Set the monthly Pro price and currency code. Plan discounts and promotional offers are managed separately in Promotions.'],
+      ['Bank transfers', 'Enter the bank, branch, account name and account number. These details appear when a member selects bank transfer during an upgrade. The member pays using those instructions and submits a receipt for admin approval.'],
+      ['Card & PayPal', 'These methods become ready when their provider credentials are configured in the server environment. This setup is separate from the bank-detail fields: saving bank details does not activate card or PayPal checkout.'],
+      ['Studio housekeeping', 'A daily background job removes temporary files and sends membership-expiry reminder emails.'],
+    ] },
 ];
-// The camera comes in on the lab's lightbox, the frame develops on it, and this note sits across the alley.
+// Develop each main roll once, then browse its frames directly on the studio lightbox.
 const lab = $('#lab'); const labStep = $('#lab-step'); const labTitle = $('#lab-title'); const labBody = $('#lab-body');
-const labCount = $('#lab-count'); const labStrip = $('#lab-strip');
-let labOpen = false; let labIdx = 0;
+const labCount = $('#lab-count');
+const LAB_ROLLS = [
+  { name: 'From pixels to prints', note: 'Import, set export options, download.', frames: [0, 1, 2], stock: 'Everyday / 03 exposures', color: '#e4a33d' },
+  { name: 'The after-hours pass', note: 'Free rolls, Pro perks & joining the club.', frames: [3, 4, 5, 6], stock: 'After dark / 04 exposures', color: '#d95a85' },
+  { name: 'Studio control room', note: 'Accounts, licensing & studio administration.', frames: [7, 8, 9, 10], stock: 'Backstage / 04 exposures', color: '#638f7b' },
+];
+let labOpen = false; let labIdx = 0; let labRoll = null; let labBusy = false; let labRequest = 0; let labReturnFocus = null; let labScrollY = 0;
+let labFrameRequest = 0; let labLoading = false; let rollReady = false;
 const pad2 = (n) => String(n).padStart(2, '0');
-const labThumbs = LAB_FRAMES.map((f, i) => {
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'lab-thumb'; b.setAttribute('aria-label', `Frame ${i + 1}: ${f.title}`);
-  const im = document.createElement('img'); im.src = f.thumb; im.alt = ''; im.loading = 'lazy';
-  const no = document.createElement('b'); no.textContent = pad2(i + 1);
-  b.append(im, no); b.addEventListener('click', () => showFrame(i)); labStrip.appendChild(b);
-  return b;
+LAB_ROLLS.forEach((roll, i) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'lab-roll'; b.style.setProperty('--stock', roll.color);
+  const can = document.createElement('span'); can.className = 'film-can'; can.textContent = pad2(i + 1); can.setAttribute('aria-hidden', 'true');
+  const label = document.createElement('span');
+  const small = document.createElement('small'); small.textContent = roll.stock;
+  const title = document.createElement('b'); title.textContent = roll.name;
+  const note = document.createElement('span'); note.textContent = roll.note;
+  label.append(small, title, note); b.append(can, label);
+  b.addEventListener('click', () => {
+    labRoll = roll; rollReady = false; $('#lab-menu').hidden = true; $('#lab-session').hidden = false;
+    roll.frames.forEach((frame) => labFrameImage(LAB_FRAMES[frame]));
+    captureRoll(roll.frames[0]); $('#lab-change').focus({ preventScroll: true });
+  });
+  $('#lab-rolls').appendChild(b);
 });
 // the full-size frames, loaded once and kept; the lightbox repaints when the one on show arrives
 const labFrameImage = (f) => {
   if (!f.el) { f.el = new Image(); f.el.decoding = 'async'; f.el.src = f.img; }
   return f.el;
 };
-function showFrame(i) {
-  labIdx = (i + LAB_FRAMES.length) % LAB_FRAMES.length;
-  const f = LAB_FRAMES[labIdx]; const no = pad2(labIdx + 1);
-  labStep.textContent = `${f.step} · frame ${no} of ${pad2(LAB_FRAMES.length)}`; labTitle.textContent = f.title; labBody.textContent = f.text;
-  labCount.textContent = `${no} / ${pad2(LAB_FRAMES.length)}`;
-  labThumbs.forEach((t, k) => t.classList.toggle('on', k === labIdx));
-  const im = labFrameImage(f);
-  const put = () => { if (labOpen && labIdx === (i + LAB_FRAMES.length) % LAB_FRAMES.length) market.labFrame(im, { no, title: f.title.toUpperCase(), total: pad2(LAB_FRAMES.length) }); };
-  market.labTotal(pad2(LAB_FRAMES.length));
-  if (im.complete && im.naturalWidth) put(); else im.addEventListener('load', put, { once: true });
-  LAB_FRAMES.forEach((g, k) => { if (k === labIdx + 1 || k === labIdx - 1) labFrameImage(g); });   // the neighbours, ready before they are asked for
+function updateLabArrows() {
+  const at = labRoll ? labRoll.frames.indexOf(labIdx) : 0;
+  $('#lab-prev').setAttribute('aria-disabled', String(!rollReady || labBusy || labLoading || at === 0));
+  $('#lab-next').setAttribute('aria-disabled', String(!rollReady || labBusy || labLoading || !labRoll || at === labRoll.frames.length - 1));
 }
-function openLab(i = 0) {
+function frameDetails(i) {
+  labIdx = i; const f = LAB_FRAMES[i];
+  labStep.textContent = labRoll.name + ' · ' + f.step;
+  labTitle.textContent = f.title; labBody.replaceChildren();
+  const summary = document.createElement('p'); summary.textContent = f.text; labBody.appendChild(summary);
+  (f.details || []).forEach(([heading, text]) => {
+    const paragraph = document.createElement('p'); paragraph.className = 'lab-detail';
+    const label = document.createElement('strong'); label.textContent = heading;
+    paragraph.append(label, document.createTextNode(text)); labBody.appendChild(paragraph);
+  });
+  labCount.textContent = pad2(labRoll.frames.indexOf(i) + 1) + ' / ' + pad2(labRoll.frames.length);
+  updateLabArrows();
+}
+async function showFrame(i) {
+  if (labBusy || !labRoll.frames.includes(i)) return;
+  const request = ++labFrameRequest; labLoading = true; frameDetails(i);
+  $('#lab-retry').hidden = true; $('#lab-status').textContent = 'Loading lightbox preview…';
+  try {
+    const im = labFrameImage(LAB_FRAMES[i]); await im.decode();
+    if (!labOpen || request !== labFrameRequest) return;
+    market.labFrame(im, { no: pad2(labRoll.frames.indexOf(i) + 1), title: LAB_FRAMES[i].title.toUpperCase(), total: pad2(labRoll.frames.length), instant: true });
+    market.labCamera('print', narrow());
+    $('#lab-status').textContent = 'Contact sheet ready · browse the frames';
+  } catch {
+    if (!labOpen || request !== labFrameRequest) return;
+    LAB_FRAMES[i].el = null; $('#lab-status').textContent = 'Preview unavailable. Reload this frame to try again.'; $('#lab-retry').hidden = false;
+  } finally {
+    if (request === labFrameRequest) { labLoading = false; updateLabArrows(); }
+  }
+}
+function moveFrame(direction) {
+  if (labBusy || labLoading || !rollReady) return;
+  const i = labRoll.frames[labRoll.frames.indexOf(labIdx) + direction];
+  if (i !== undefined) showFrame(i);
+}
+function setLabStage(stage, text) {
+  lab.dataset.captureStage = String(stage);
+  labStep.textContent = labRoll.name + ' · Photo session';
+  labTitle.textContent = ['Finding the focus', 'Taking the shot', 'Your contact sheet'][stage];
+  $$('#lab-process span').forEach((el, i) => { el.classList.toggle('done', i < stage); el.classList.toggle('active', i === stage); });
+  $('#lab-status').textContent = text;
+}
+async function captureRoll(i) {
+  if (labBusy) return;
+  const request = ++labRequest; labBusy = true; lab.classList.add('capturing');
+  $('#lab-retry').hidden = true; frameDetails(i); setLabStage(0, 'Setting up the shot…');
+  try {
+    const im = labFrameImage(LAB_FRAMES[i]);
+    await im.decode();
+    if (!labOpen || request !== labRequest) return;
+    market.capturePhoto({ narrow: narrow(), reduced,
+      onStep: setLabStage,
+      onDone: () => {
+        if (!labOpen || request !== labRequest) return;
+        rollReady = true; labBusy = false; lab.classList.remove('capturing'); showFrame(i);
+      },
+    });
+  } catch {
+    if (!labOpen || request !== labRequest) return;
+    LAB_FRAMES[i].el = null; labBusy = false; lab.classList.remove('capturing');
+    $('#lab-status').textContent = 'This film roll could not load. Reload the preview to try again.';
+    $('#lab-retry').hidden = false; updateLabArrows();
+  }
+}
+function chooseRoll() {
+  ++labRequest; ++labFrameRequest; labBusy = false; labLoading = false; market.abortCapture(); lab.classList.remove('capturing');
+  $('#lab-next').removeAttribute('aria-disabled'); $('#lab-menu').hidden = false; $('#lab-session').hidden = true;
+  market.labTotal(pad2(LAB_FRAMES.length)); market.labMode(true, { narrow: narrow() });
+}
+function openLab() {
   if (labOpen) return;
+  labReturnFocus = document.activeElement;
+  cancelAnimationFrame(animId); animating = false; cur = sectionStop[2] + 4;
+  labScrollY = stops[cur]; window.scrollTo({ top: labScrollY, behavior: 'instant' }); readScroll();
   labOpen = true; lab.hidden = false; document.documentElement.classList.add('lab-open'); document.body.classList.add('lab-open');
-  market.labMode(true, { narrow: narrow() });
-  showFrame(i); $('#lab-next').focus({ preventScroll: true });
+  $('.proj-inner').inert = true; chooseRoll(); $('.lab-roll').focus({ preventScroll: true });
 }
 function closeLab() {
   if (!labOpen) return;
+  ++labRequest; ++labFrameRequest; labBusy = false; labLoading = false; market.abortCapture();
   labOpen = false; lab.hidden = true; document.documentElement.classList.remove('lab-open'); document.body.classList.remove('lab-open');
-  market.labMode(false);
-  $('#lab-open').focus({ preventScroll: true });
+  market.labMode(false); $('.proj-inner').inert = false;
+  (labReturnFocus || $('#lab-open')).focus({ preventScroll: true });
 }
-window.addEventListener('resize', () => { if (labOpen) market.labMode(true, { narrow: narrow() }); });
-$('#lab-open').addEventListener('click', () => openLab(0));
-$('#spot-lab').addEventListener('click', () => openLab(0));
+window.addEventListener('resize', () => {
+  if (!labOpen) return;
+  layoutKeys(); labScrollY = stops[sectionStop[2] + 4]; window.scrollTo({ top: labScrollY, behavior: 'instant' });
+  market.labCamera(labBusy || !$('#lab-menu').hidden ? 'bench' : 'print', narrow());
+});
+$('#lab-open').addEventListener('click', openLab);
+$('#spot-lab').addEventListener('click', openLab);
 $('#lab-close').addEventListener('click', closeLab);
-$('#lab-prev').addEventListener('click', () => showFrame(labIdx - 1));
-$('#lab-next').addEventListener('click', () => showFrame(labIdx + 1));
+$('#lab-change').addEventListener('click', () => { chooseRoll(); $('.lab-roll').focus({ preventScroll: true }); });
+$('#lab-prev').addEventListener('click', () => moveFrame(-1));
+$('#lab-next').addEventListener('click', () => moveFrame(1));
+$('#lab-retry').addEventListener('click', () => { if (rollReady) showFrame(labIdx); else captureRoll(labIdx); });
 window.addEventListener('keydown', (e) => {
   if (!labOpen) return;
-  if (e.key === 'Escape') { e.preventDefault(); closeLab(); }
-  else if (e.key === 'ArrowLeft') { e.preventDefault(); showFrame(labIdx - 1); }
-  else if (e.key === 'ArrowRight') { e.preventDefault(); showFrame(labIdx + 1); }
+  if (e.key === 'Escape') { e.preventDefault(); closeLab(); return; }
+  if (!$('#lab-session').hidden && ['ArrowLeft', 'ArrowRight'].includes(e.key)) { e.preventDefault(); moveFrame(e.key === 'ArrowRight' ? 1 : -1); }
+  if (e.key === 'Tab') {
+    const controls = [...lab.querySelectorAll('button:not(:disabled), a[href]')].filter((el) => el.getClientRects().length);
+    const first = controls[0]; const last = controls.at(-1);
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
 });
-{
-  // a swipe across the print moves one frame
-  let x0 = null;
-  lab.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
-  lab.addEventListener('touchend', (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 50) showFrame(labIdx + (dx < 0 ? 1 : -1)); });
-}
 
 /* ---------- the hotspots pinned into the alley, and the noodle bar's order pad ---------- */
 const ticket = $('#ticket');
@@ -322,7 +445,16 @@ const spots = [
   { el: $('#spot-order'), anchor: market.anchors.order, when: () => pages[1].classList.contains('live'), onNarrow: true },
   { el: $('#spot-lab'), anchor: market.anchors.lab, when: () => projIdx === 2, onNarrow: false },   // a phone has the button in the project text instead
 ];
-const openTicket = (o) => ticket.classList.toggle('open', o);
+let kitchenReturnFocus = null; let kitchenScrollY = 0;
+const openTicket = (o) => {
+  ticket.classList.toggle('open', o); document.body.classList.toggle('kitchen-open', o);
+  if (o) {
+    kitchenReturnFocus = document.activeElement; cancelAnimationFrame(animId); animating = false;
+    layoutKeys(); cur = sectionStop[1]; kitchenScrollY = stops[cur]; window.scrollTo({ top: kitchenScrollY, behavior: 'instant' }); readScroll();
+    $('.dish.on')?.focus({ preventScroll: true });
+  }
+  else { resetTicket(); kitchenReturnFocus?.focus({ preventScroll: true }); }
+};
 $('#spot-order').addEventListener('click', () => openTicket(!ticket.classList.contains('open')));
 $('#ticket-close').addEventListener('click', () => openTicket(false));
 window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !labOpen) openTicket(false); });
@@ -346,31 +478,56 @@ function placeSpots() {
 }
 // the order pad: four dishes, the ingredients are the skills; pick one and the cook gets to work
 const dishesEl = $('#dishes'); const fill = $('#ticket-fill'); const ticketText = $('#ticket-text'); const again = $('#ticket-again');
-const TICKET_IDLE = 'Pick a dish. The ingredients are the skills.';
-let cookingNow = false;
-const resetTicket = () => { ticket.classList.remove('cooking', 'done'); document.body.classList.remove('cooking'); $$('.dish').forEach((x) => x.classList.remove('on')); fill.style.transition = 'none'; fill.style.width = '0%'; ticketText.textContent = TICKET_IDLE; };
+const TICKET_IDLE = 'Choose your flavour. Every ingredient is a skill.';
+let cookingNow = false; let selectedDish = null; let previewDish = 0; let orderNumber = 0;
+const resetTicket = () => {
+  market.abortCook(); cookingNow = false; selectedDish = null;
+  ticket.classList.remove('cooking', 'done'); document.body.classList.remove('cooking');
+  $('#cook-session').hidden = true; showDish(previewDish);
+  fill.style.transition = 'none'; fill.style.width = '0%'; ticketText.textContent = TICKET_IDLE;
+};
+const cookCue = ({ phase, index = 0 }) => {
+  const d = selectedDish; if (!d) return;
+  const progress = phase === 'served' ? 100 : phase === 'plating' ? 92 : phase === 'sizzle' ? 70 : phase === 'prep' ? 4 : 10 + ((index + 1) / d.items.length) * 45;
+  fill.style.transition = 'width .5s ease'; fill.style.width = progress + '%';
+  const status = phase === 'served' ? 'Ready for pickup!' : phase === 'plating' ? '3 / 3 · Plating up…' : phase === 'sizzle' ? '2 / 3 · Cooking your noodles…' : '1 / 3 · Preparing your order…';
+  ticketText.textContent = status;
+  $('#order-progress').setAttribute('aria-valuenow', Math.round(progress));
+  $('#order-progress').setAttribute('aria-valuetext', status);
+};
+const FOOD_ART = ['pad-thai', 'shoyu-ramen', 'miso-udon', 'yakisoba'];
+function showDish(index) {
+  previewDish = index;
+  $$('.dish').forEach((el, i) => el.classList.toggle('on', i === index));
+}
 COURSES.forEach((d, i) => {
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'dish'; b.style.setProperty('--c', d.css);
-  const name = document.createElement('b'); name.textContent = d.name;
-  const ings = document.createElement('span'); ings.className = 'ings'; d.items.forEach((it) => { const em = document.createElement('em'); em.textContent = it; ings.appendChild(em); });
-  const note = document.createElement('span'); note.className = 'note'; note.textContent = d.note;
-  b.append(name, ings, note);
-  b.addEventListener('click', () => {
-    if (cookingNow) return; cookingNow = true;
-    $$('.dish').forEach((x, j) => x.classList.toggle('on', j === i));
-    ticket.classList.add('cooking'); ticket.classList.remove('done'); document.body.classList.add('cooking');
-    ticketText.textContent = `Order in: ${d.name}. Getting the ingredients out\u2026`;
-    const total = market.cook(i, {
-      narrow: narrow(),
-      onStep: (text) => { ticketText.textContent = text; },
-      onDone: () => { cookingNow = false; ticket.classList.remove('cooking'); ticket.classList.add('done'); document.body.classList.remove('cooking'); ticketText.textContent = `Order up! ${d.name}: ${d.items.join(', ')}.`; },
-    });
-    fill.style.transition = 'none'; fill.style.width = '0%'; void fill.offsetWidth; fill.style.transition = `width ${total.toFixed(1)}s linear`; fill.style.width = '100%';
-  });
-  dishesEl.appendChild(b);
+  const row = document.createElement('button'); row.type = 'button'; row.className = 'dish';
+  row.setAttribute('aria-label', 'Cook ' + d.name + '. Ingredients: ' + d.items.join(', '));
+  const photo = document.createElement('img'); photo.className = 'dish-photo'; photo.src = 'img/menu/' + FOOD_ART[i] + '-cartoon.jpg'; photo.alt = d.name; photo.width = 480; photo.height = 480; photo.decoding = 'async';
+  const info = document.createElement('span'); info.className = 'dish-info';
+  const name = document.createElement('b'); name.className = 'menu-dish-name'; name.textContent = d.name;
+  const ingredients = document.createElement('span'); ingredients.className = 'menu-ingredients'; ingredients.textContent = d.items.join(' · ');
+  info.append(name, ingredients);
+  const arrow = document.createElement('span'); arrow.className = 'menu-order'; arrow.textContent = '↗'; arrow.setAttribute('aria-hidden', 'true');
+  row.append(photo, info, arrow); row.addEventListener('click', () => { showDish(i); startDish(i); }); dishesEl.appendChild(row);
 });
-again.addEventListener('click', resetTicket);
-const leaveStall = () => { openTicket(false); if (cookingNow) { market.abortCook(); cookingNow = false; } resetTicket(); };
+function startDish(i) {
+    const d = COURSES[i];
+    if (cookingNow) return; cookingNow = true; selectedDish = d;
+    ticket.style.setProperty('--dish-accent', d.css);
+    ticket.classList.add('cooking'); ticket.classList.remove('done'); document.body.classList.add('cooking');
+    $('#cook-session').hidden = false; $('#cook-number').textContent = 'Order ' + pad2(++orderNumber); $('#cook-dish').textContent = d.name;
+    ticketText.textContent = 'Getting the kitchen ready…'; fill.style.width = '0%';
+    ticket.scrollTop = 0; cookCue({ phase: 'prep' });
+    market.cook(i, { narrow: narrow() && window.innerHeight > 560, reduced, onCue: cookCue,
+      onDone: () => { cookingNow = false; ticket.classList.remove('cooking'); ticket.classList.add('done'); cookCue({ phase: 'served' }); again.focus({ preventScroll: true }); },
+    });
+    $('#ticket-close').focus({ preventScroll: true });
+}
+showDish(0);
+again.addEventListener('click', () => { resetTicket(); $('.dish.on').focus({ preventScroll: true }); });
+const leaveStall = () => openTicket(false);
+window.addEventListener('resize', () => { if (ticket.classList.contains('open') && selectedDish) market.cookCamera(narrow() && window.innerHeight > 560); });
 
 /* ---------- hovers from the page into the alley ---------- */
 {
@@ -418,12 +575,13 @@ function updateCamera(dt) {
   if (market.cam.w > 0.001) { camPos.lerp(market.cam.eye, market.cam.w); camLook.lerp(market.cam.look, market.cam.w); }   // an order cooking: close over the bench
   camPos.y += Math.sin(nowT * 0.6) * 0.02;
   mouseSmooth.lerp(mouse, 1 - Math.pow(0.001, dt));
-  camPos.x += mouseSmooth.x * 0.2;
-  camPos.y += mouseSmooth.y * 0.1;
+  const pointerMotion = labOpen || cookingNow || ticket.classList.contains('done') ? 0.12 : 1;
+  camPos.x += mouseSmooth.x * 0.2 * pointerMotion;
+  camPos.y += mouseSmooth.y * 0.1 * pointerMotion;
   fwd.copy(camLook).sub(camPos).normalize();
   right.crossVectors(fwd, camera.up).normalize();
-  camLook.addScaledVector(right, mouseSmooth.x * 1.2);
-  camLook.y += mouseSmooth.y * 0.6;
+  camLook.addScaledVector(right, mouseSmooth.x * 1.2 * pointerMotion);
+  camLook.y += mouseSmooth.y * 0.6 * pointerMotion;
   camPosNow.lerp(camPos, 1 - Math.pow(reduced ? 0.000001 : 0.0008, dt));
   camLookNow.lerp(camLook, 1 - Math.pow(reduced ? 0.000001 : 0.0008, dt));
   camera.position.copy(camPosNow);
@@ -437,6 +595,7 @@ function resize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   layoutKeys();
+  if (ticket.classList.contains('open')) { cur = sectionStop[1]; kitchenScrollY = stops[cur]; window.scrollTo({ top: kitchenScrollY, behavior: 'instant' }); readScroll(); return; }
   if (stepMode() && !animating && !lockP) window.scrollTo({ top: stops[cur], behavior: 'instant' });
   readScroll();
 }

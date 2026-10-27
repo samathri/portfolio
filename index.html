@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="market.css" />
-  <script type="importmap">{ "imports": { "three": "./vendor/three.module.js", "./scene.js": "./scene.js?v=20261025b", "./kit.js": "./kit.js?v=20261025b" } }</script>
+  <link rel="stylesheet" href="market.css?v=20261027-pickup" />
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.js", "./scene.js": "./scene.js?v=20261027-pickup", "./kit.js": "./kit.js?v=20261027-pickup" } }</script>
 </head>
 <body>
   <canvas id="hall" aria-hidden="true"></canvas>
@@ -80,11 +80,11 @@
               <p class="eyebrow" style="--c:#ff3fa8">03 · Projects · Shop 3 of 5</p>
               <span class="proj-no" style="--c:#ff3fa8">03</span>
               <h2>Image Converter Pro</h2>
-              <p class="proj-kind" style="--c:#ff3fa8">Photo lab · Web app</p>
+              <p class="proj-kind" style="--c:#ff3fa8">Photo studio · Web app</p>
               <p class="lede">Convert and compress images in the browser to AVIF, WEBP, JPEG or PNG at a target size. Free rolls, a Pro plan paid by card, PayPal or bank transfer, and an admin console.</p>
               <p class="proj-stackline">React · Node.js · Express · Sharp · PostgreSQL · Vercel</p>
               <div class="proj-actions">
-                <button class="btn" style="--c:#ff3fa8" type="button" id="lab-open">See how it works</button>
+                <button class="btn" style="--c:#ff3fa8" type="button" id="lab-open">Take a shot · see how it works</button>
                 <a class="btn ghost" style="--c:#ff3fa8" href="https://image-converter-pro-sand.vercel.app/" target="_blank" rel="noopener noreferrer">Open the site</a>
               </div>
             </div>
@@ -112,20 +112,35 @@
             </div>
           </article>
         </div>
-        <!-- the photo lab's contact sheet: the camera comes in on the lightbox, the frame develops on it, and this note sits across the alley -->
-        <div class="lab-panel" id="lab" role="region" aria-label="How Image Converter Pro works" hidden>
-          <div class="lab-note">
+        <!-- the photo studio: choose a film roll, take a shot, and explore its contact sheet -->
+        <div class="lab-panel" id="lab" role="dialog" aria-modal="true" aria-label="Image Converter Pro photo studio" hidden>
+          <div class="lab-viewfinder" aria-hidden="true"><span class="viewfinder-top">STUDIO 03 <b>LIVE VIEW</b></span><i class="focus-bracket"></i><span class="viewfinder-bottom">1/125 &nbsp; F 2.8 &nbsp; ISO 400 <b>AF-S</b></span></div>
+        <div class="lab-note">
+            <div class="lab-ticket-head"><span>Studio 03 / Image lab</span><span>Contact sheets</span></div>
+            <div id="lab-menu">
+              <p class="eyebrow">Image Converter Pro · behind the scenes</p>
+              <h3>Select a film roll.</h3>
+              <p>Choose a roll, step behind the camera, and take a shot. Explore the project frame by frame on the studio lightbox.</p>
+              <div class="lab-rolls" id="lab-rolls"></div>
+              <p class="lab-footnote">Focus → capture → contact sheet</p>
+            </div>
+            <div id="lab-session" hidden>
+            <div class="lab-process" id="lab-process" aria-label="Photo session"><span>01 Focus</span><span>02 Capture</span><span>03 Review</span></div>
+            <p class="lab-status" id="lab-status" role="status"></p>
             <p class="eyebrow" id="lab-step" style="--c:#ff3fa8"></p>
             <h3 id="lab-title"></h3>
-            <p id="lab-body"></p>
-            <div class="lab-strip" id="lab-strip" aria-label="Frames"></div>
+            <div id="lab-body"></div>
             <div class="lab-nav">
-              <button type="button" class="lab-arrow" id="lab-prev" aria-label="Previous frame">&larr;</button>
+              <button type="button" class="lab-arrow" id="lab-prev" aria-label="Previous frame">←</button>
               <span id="lab-count" aria-live="polite"></span>
-              <button type="button" class="lab-arrow" id="lab-next" aria-label="Next frame">&rarr;</button>
-              <button type="button" class="lab-close" id="lab-close">Back to the alley</button>
+              <button type="button" class="lab-arrow" id="lab-next" aria-label="Next frame">→</button>
             </div>
+            <button type="button" class="lab-change" id="lab-retry" hidden>Reload preview</button>
+            <button type="button" class="lab-change" id="lab-change">↶ Film roll library</button>
+            </div>
+            <div class="lab-footer"><button type="button" class="lab-close" id="lab-close">Back to the alley</button>
             <a class="lab-link" href="https://image-converter-pro-sand.vercel.app/" target="_blank" rel="noopener noreferrer">Open the site &rarr;</a>
+            </div>
           </div>
         </div>
         <ol class="proj-dots" id="proj-dots" aria-hidden="true"><li class="on"></li><li></li><li></li><li></li><li></li></ol>
@@ -157,22 +172,29 @@
 
   <!-- hotspots pinned into the alley: the wok at the noodle bar opens the order pad; the print line at the photo lab opens the contact sheet -->
   <div class="spots" id="spots">
-    <button class="spot" id="spot-order" type="button" aria-label="Order noodles: my skills, cooked to order"><i><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 4.5 6 6 6 11a6 6 0 0 1-12 0c0-2.5 1.2-4 2.5-5.2 0 2.2 1 3.5 2.5 3.7C11 8 11 5 12 2z" /></svg></i><span>Order noodles · my skills</span></button>
-    <button class="spot" id="spot-lab" type="button" aria-label="See how Image Converter Pro works"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.2" /><path d="M12 3v5.8M12 15.2V21M3 12h5.8M15.2 12H21" opacity=".55" /></svg></i><span>Contact sheet · how it works</span></button>
+    <button class="spot" id="spot-order" type="button" aria-label="Order noodles"><i><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 4.5 6 6 6 11a6 6 0 0 1-12 0c0-2.5 1.2-4 2.5-5.2 0 2.2 1 3.5 2.5 3.7C11 8 11 5 12 2z" /></svg></i><span>Order noodles</span></button>
+    <button class="spot" id="spot-lab" type="button" aria-label="See how Image Converter Pro works"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="4"/><path d="M18 10h.01"/></svg></i><span>Take a shot · how it works</span></button>
   </div>
 
-  <div class="ticket" id="ticket" role="dialog" aria-label="Order noodles: my skills as four dishes">
-    <button class="paper-close" id="ticket-close" type="button" aria-label="Close the order pad">&times;</button>
-    <p class="eyebrow">Order pad · my skills, cooked to order</p>
-    <h3>What are you having?</h3>
-    <div class="dishes" id="dishes"></div>
+  <div class="ticket" id="ticket" role="dialog" aria-label="Noodle menu">
+    <div class="kitchen-header">
+      <button class="paper-close" id="ticket-close" type="button" aria-label="Close the noodle kitchen">&times;</button>
+      <h3>Noodle menu</h3>
+    </div>
+    <div class="kitchen-menu">
+      <div class="dishes" id="dishes" aria-label="Noodle menu"></div>
+    </div>
+    <div class="cook-session" id="cook-session" hidden>
+      <div class="cook-heading"><span id="cook-number">ORDER 01</span></div>
+      <h4 id="cook-dish"></h4>
+    </div>
     <div class="ticket-status">
-      <span class="ticket-bar" aria-hidden="true"><i id="ticket-fill"></i></span>
-      <b id="ticket-text" aria-live="polite">Pick a dish. The ingredients are the skills.</b>
-      <button class="ticket-again" id="ticket-again" type="button">Order another</button>
+      <span class="ticket-bar" id="order-progress" role="progressbar" aria-label="Order progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="ticket-fill"></i></span>
+      <b id="ticket-text" aria-live="polite">Choose your flavour. Every ingredient is a skill.</b>
+              <button class="ticket-again" id="ticket-again" type="button">Pick up</button>
     </div>
   </div>
 
-  <script type="module" src="main.js?v=20261026"></script>
+  <script type="module" src="main.js?v=20261027-pickup"></script>
 </body>
 </html>

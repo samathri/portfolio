@@ -46,7 +46,7 @@ export const STOPS = {
 export const PROJECTS = [
   { no: '01', name: 'MEDI-O', kind: 'SECURE ONLINE PHARMACY', color: 0xff9a3c, stack: ['PHP', 'MYSQL', 'AJAX', 'JQUERY'] },
   { no: '02', name: 'HOUR MARKERS', kind: 'WATCH STORE', color: 0xffd166, stack: ['PHP', 'JAVASCRIPT'] },
-  { no: '03', name: 'IMAGE CONVERTER PRO', kind: 'PHOTO LAB · CONVERT · COMPRESS', color: 0xff3fa8, stack: ['REACT', 'NODE.JS', 'EXPRESS', 'SHARP', 'POSTGRES'], lab: true },
+  { no: '03', name: 'IMAGE CONVERTER PRO', kind: 'PHOTO STUDIO · PHOTO SESSIONS', color: 0xff3fa8, stack: ['REACT', 'NODE.JS', 'EXPRESS', 'SHARP', 'POSTGRES'], lab: true },
   { no: '04', name: 'MUNASINGHE INTL', kind: 'EXPORT BUSINESS', color: 0x7cf29a, stack: ['WORDPRESS', 'SEO'] },
   { no: '05', name: 'SERANDI', kind: 'JEWELRY STORE', color: 0x5fe9ff, stack: ['PHP', 'MYSQL'] },
 ];
@@ -57,18 +57,13 @@ export const LAB_PRINTS = {
 };
 // what the noodle bar cooks to order: the four courses of the stack, and the skills are the ingredients
 export const COURSES = [
-  { name: 'Front end', note: 'crisp and quick, straight to the plate', color: 0x5fe9ff, css: '#5fe9ff', cook: 'wok', noodle: 0xf1dc9c, broth: null, items: ['HTML', 'CSS', 'JavaScript', 'React'] },
-  { name: 'Back end', note: 'slow-simmered logic, a deep broth', color: 0xff3fa8, css: '#ff3fa8', cook: 'pot', noodle: 0xf1dc9c, broth: 0x8a4a12, items: ['PHP', 'Node.js', 'Python'] },
-  { name: 'Database', note: 'the stock everything else is built on', color: 0x7cf29a, css: '#7cf29a', cook: 'pot', noodle: 0xf6efe0, broth: 0xb8862a, items: ['MySQL'] },
-  { name: 'Tools', note: 'the kitchen kit, sharpened daily', color: 0xff9a3c, css: '#ff9a3c', cook: 'wok', noodle: 0xe8b86a, broth: null, items: ['Git', 'WordPress', 'Figma', 'Canva', 'Claude Code', 'ChatGPT'] },
+  { name: 'Pad Thai', category: 'Front end', note: 'Tamarind, lime & a little wok magic. Bright interfaces, made to order.', color: 0x5fe9ff, css: '#5fe9ff', cook: 'wok', noodle: 0xf1dc9c, broth: null, items: ['HTML', 'CSS', 'JavaScript', 'React'] },
+  { name: 'Shoyu Ramen', category: 'Back end', note: 'A slow-simmered soy broth. The logic behind every delicious bowl.', color: 0xff3fa8, css: '#ff3fa8', cook: 'pot', noodle: 0xf1dc9c, broth: 0x8a4a12, items: ['PHP', 'Node.js', 'Python'] },
+  { name: 'Miso Udon', category: 'Database', note: 'Thick noodles, deep miso flavour. A dependable foundation.', color: 0x7cf29a, css: '#7cf29a', cook: 'pot', noodle: 0xf6efe0, broth: 0xb8862a, items: ['MySQL'] },
+  { name: 'Yakisoba', category: 'Tools & workflow', note: 'Sizzling noodles with all the extras. The house special for getting things done.', color: 0xff9a3c, css: '#ff9a3c', cook: 'wok', noodle: 0xe8b86a, broth: null, items: ['Git', 'WordPress', 'Figma', 'Canva', 'Claude Code', 'ChatGPT'] },
 ];
+const COOK_TIMING = { prep: 1.4, ingredient: 1.65, finish: 4.3 };
 export const INGREDIENTS = COURSES.flatMap((c) => c.items.map((name) => ({ name, color: c.color })));
-const MENU = [
-  { title: 'MAINS', color: PINK, items: [['PHP', 'back end'], ['HTML', 'structure'], ['CSS', 'style'], ['JAVASCRIPT', 'interaction'], ['NODE.JS', 'services'], ['REACT', 'interfaces'], ['PYTHON', 'scripts & data']] },
-  { title: 'SIDES', color: CYAN, items: [['MYSQL', 'data'], ['WORDPRESS', 'sites'], ['GIT', 'versions']] },
-  { title: 'DESIGN', color: GREEN, items: [['FIGMA', 'layouts'], ['CANVA', 'visuals']] },
-  { title: 'AI SPECIALS', color: ORANGE, items: [['CLAUDE CODE', 'builds with me'], ['CHATGPT', 'drafts & reviews']] },
-];
 
 const awningTexture = (a, b) => {
   const tex = K.canvasTexture(256, 64, (ctx, w, h) => { for (let i = 0; i < 8; i += 1) { ctx.fillStyle = i % 2 ? a : b; ctx.fillRect(i * 32, 0, 32, h); } ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0, h - 8, w, 8); });
@@ -176,12 +171,13 @@ export function buildScene() {
   };
 
   // the photo lab's lightbox: the name, what it is, and a strip of four frames from the app, repainted as each frame loads.
-  // While the contact sheet is open it shows one frame at a time, developing in from the safelight's red.
+  // The contact sheet shows one captured frame at a time.
   const labImages = LAB_PRINTS.strip.map(([src]) => { const im = new Image(); im.decoding = 'async'; im.dataset.src = src; return im; });
-  const labView = { on: false, img: null, no: '', title: '', total: '08', a: 1 };   // a: how far the frame on show has developed, 0 (red) to 1
+  const labView = { on: false, img: null, no: '', title: '', total: '11', a: 1 };
+  let captureJob = null; let studioLens = null; let studioGlass = null; let shutterLight = null;
   const labBoardPainter = (pr) => (ctx, w, h, t = 0) => {
-    const c = K.hex(pr.color);
-    ctx.fillStyle = '#120d08'; ctx.fillRect(0, 0, w, h);
+    const c = '#a8d4f1';
+    ctx.fillStyle = '#101923'; ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = 'rgba(255,255,255,0.03)'; for (let i = 0; i < 500; i += 1) ctx.fillRect(Math.random() * w, Math.random() * h, 3, 3);
     ctx.strokeStyle = c; ctx.lineWidth = 5; ctx.strokeRect(12, 12, w - 24, h - 24);
     ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
@@ -212,7 +208,7 @@ export function buildScene() {
     ctx.fillStyle = '#f4ecd8'; ctx.font = `800 ${h * 0.1}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText(pr.name, w * 0.16, h * 0.125, w * 0.5);
     ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.045}px ${K.FONT}`; ctx.letterSpacing = '4px'; ctx.fillText(pr.kind, w * 0.16, h * 0.225, w * 0.5);
     ctx.textAlign = 'right';
-    ctx.fillStyle = c; ctx.font = `800 ${h * 0.05}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText('SEE THE CONTACT SHEET', w * 0.95, h * 0.125);
+    ctx.fillStyle = c; ctx.font = `800 ${h * 0.05}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText('PICK A ROLL · TAKE A SHOT', w * 0.95, h * 0.125);
     ctx.fillStyle = '#b8c0cc'; ctx.font = `600 ${h * 0.04}px ${K.FONT}`; ctx.letterSpacing = '3px'; ctx.fillText(`${labView.total} FRAMES · HOW IT WORKS`, w * 0.95, h * 0.205);
     ctx.textAlign = 'left';
     // the strip: four frames, sprocket holes above and below
@@ -314,13 +310,17 @@ export function buildScene() {
     const tag = K.label(name, { w: 0.18, h: 0.055, color: '#2b1d12', bg: '#efe3c6', size: 0.55 }); tag.position.set(0, 0.045, 0.1); tag.rotation.x = -0.75; b.add(tag);
     return { group: b, home: b.position.clone(), color };
   };
-  const dressNoodleBar = (g, potSteam, potX) => {
+  const dressNoodleBar = (g, potX) => {
+    const props = new THREE.Group(); g.add(props);
+    const cookLight = K.pointLight(0xffd8ab, 0, 3.5, 0.5, 1.9, 1.0); g.add(cookLight);
+    const rightPan = wok(g, potX, 0.35);
+    const soup = K.cyl(0.148, 0.148, 0.012, BROTH.clone(), potX, 1.105, 0.35, 24); g.add(soup);
     // the back bench the wok and the ingredients sit on
     g.add(K.box(3.1, 0.96, 0.62, DARKWOOD, 0, 0.48, -0.3)); g.add(K.box(3.1, 0.02, 0.64, TIN, 0, 0.955, -0.3));
-    noodleBowl(g, -0.7, 0.5, 0.2); noodleBowl(g, -0.25, 0.4, -0.4); noodleBowl(g, 0.15, 0.55, 0.9);
-    steamer(g, 0.9, 0.38);
+    noodleBowl(props, -0.7, 0.5, 0.2); noodleBowl(props, -0.25, 0.4, -0.4); noodleBowl(props, 0.15, 0.55, 0.9);
+    steamer(props, 0.9, 0.38);
     const wk = wok(g, -0.55, -0.3);
-    hangingNoodles(g, 0.95, 1.42, 2.12, 0.78);
+    hangingNoodles(props, 0.95, 1.42, 2.12, 0.78);
     // a tray of raw noodle nests, a basket of eggs, a cup of chopsticks, spice jars, a stack of bowls, a ladle, the little price card
     g.add(K.box(0.5, 0.03, 0.3, BAMBOO, -1.25, 0.975, 0.3));
     for (let i = 0; i < 6; i += 1) { const m = new THREE.Mesh(nestGeo, NOODLE_RAW); m.position.set(-1.43 + (i % 3) * 0.17, 1.01, 0.23 + Math.floor(i / 3) * 0.14); m.scale.set(1, 0.4, 1); g.add(m); }
@@ -330,8 +330,7 @@ export function buildScene() {
     for (let i = 0; i < 9; i += 1) { const st = K.cyl(0.004, 0.004, 0.24, DARKWOOD, 1.42 + (Math.random() - 0.5) * 0.05, 1.14, 0.66 + (Math.random() - 0.5) * 0.05, 5); st.rotation.x = (Math.random() - 0.5) * 0.2; st.rotation.z = (Math.random() - 0.5) * 0.2; g.add(st); }
     [[1.25, 0xd0261b], [1.36, 0xf2b632], [1.47, 0x3a2410]].forEach(([x, c]) => { g.add(K.cyl(0.032, 0.032, 0.08, PLASTIC(c), x, 1.0, -0.45, 12)); g.add(K.cyl(0.036, 0.036, 0.11, GLASS, x, 1.015, -0.45, 12)); g.add(K.cyl(0.03, 0.03, 0.02, K.MAT.black, x, 1.08, -0.45, 12)); });
     for (let i = 0; i < 5; i += 1) g.add(K.cyl(0.13, 0.08, 0.05, BOWL, -1.3, 0.985 + i * 0.038, -0.35, 16));
-    const ladle = K.cyl(0.006, 0.006, 0.34, TIN, 1.4, 1.4, 0.3, 6); ladle.rotation.z = 0.5; g.add(ladle); g.add(K.sphere(0.03, TIN, 1.31, 1.26, 0.3, 10));
-    const card = K.label('RAMEN 550 \u00b7 DUMPLINGS 350 \u00b7 TEA 150', { w: 0.34, h: 0.1, color: '#2b1d12', bg: '#efe3c6', size: 0.5 }); card.position.set(-1.4, 1.05, 0.62); card.rotation.x = -0.35; g.add(card);
+    const card = K.label('PAD THAI · RAMEN · UDON · YAKISOBA', { w: 0.34, h: 0.1, color: '#2b1d12', bg: '#efe3c6', size: 0.5 }); card.position.set(-1.4, 1.05, 0.62); card.rotation.x = -0.35; g.add(card);
     // the mise en place: two rows of ingredient bowls, one per skill, coloured by course
     const bowls = {};
     g.add(K.box(1.45, 0.07, 0.25, DARKWOOD, 0.42, 0.99, -0.46));   // a riser, so the back row reads over the front one
@@ -340,10 +339,10 @@ export function buildScene() {
     const served = servedBowl(g, 0.55, 0.58);
     const drop = new THREE.Mesh(nestGeo, NOODLE_RAW); drop.scale.set(1.4, 0.5, 1.4); drop.visible = false; g.add(drop);
     const bits = []; for (let i = 0; i < 12; i += 1) { const m = new THREE.Mesh(bitGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 })); m.visible = false; g.add(m); bits.push(m); }
-    return { g, wok: wk, pot: { ladle, steam: potSteam, x: potX, z: 0.35 }, served, drop, tag: null, bowls, bits };
+    return { g, cookLight, foreground: [props], wok: wk, pot: { ...rightPan, soup }, served, drop, tag: null, bowls, bits };
   };
 
-  /* ---------- the photo lab: prints pegged on a line under the awning, a red safelight, developing trays on the counter ---------- */
+  /* ---------- studio reference prints and camera accessories ---------- */
   const labPrints = [];   // { group, seed }: they sway on the line
   let labLamp = null;
   const PAPER_W = new THREE.MeshStandardMaterial({ color: 0xf4f2ee, roughness: 0.8 });
@@ -363,17 +362,17 @@ export function buildScene() {
       });
       labPrints.push({ group: p, seed: i * 1.7 });
     });
-    // the safelight
-    g.add(K.cyl(0.05, 0.07, 0.06, TIN, -0.5, 2.3, 0.55, 12)); g.add(K.led(0xff2020, 0.035, -0.5, 2.25, 0.55));
-    labLamp = K.pointLight(0xff2a2a, 1.2, 3.0, -0.5, 2.1, 0.5); g.add(labLamp);
-    // two developing trays, a print in the bath, the chemistry, the little card
-    [[-1.15, 0x2a0c0f], [-0.55, 0x0f1a2a]].forEach(([tx, c], i) => {
-      g.add(K.box(0.52, 0.07, 0.36, PLASTIC(0x2b2f36), tx, 0.995, 0.45));
-      g.add(K.box(0.46, 0.012, 0.3, new THREE.MeshStandardMaterial({ color: c, roughness: 0.05, metalness: 0.3 }), tx, 1.027, 0.45));
-      if (i === 0) { const pr = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.2), PAPER_W); pr.rotation.x = -Math.PI / 2; pr.rotation.z = 0.2; pr.position.set(tx, 1.034, 0.45); g.add(pr); }
+    // A cool task light, lens caps and film canisters on the equipment desk.
+    g.add(K.cyl(0.05, 0.07, 0.06, TIN, -0.5, 2.3, 0.55, 12));
+    g.add(K.led(0xb8dfff, 0.035, -0.5, 2.25, 0.55));
+    labLamp = K.pointLight(0xb8dfff, 1.2, 3.0, -0.5, 2.1, 0.5); g.add(labLamp);
+    [0.1, 0.3, 0.5].forEach((x, i) => {
+      g.add(K.cyl(0.055, 0.055, 0.16, PLASTIC([0xcca75a, 0x9c627f, 0x638f7b][i]), x, 1.04, 0.45, 16));
+      g.add(K.cyl(0.06, 0.06, 0.025, K.MAT.black, x, 1.13, 0.45, 16));
     });
-    [[0.25, 0x3a2410], [0.37, 0x8a4a12]].forEach(([bx, c]) => { g.add(K.cyl(0.035, 0.035, 0.16, PLASTIC(c), bx, 1.04, 0.55, 12)); g.add(K.cyl(0.015, 0.015, 0.03, K.MAT.black, bx, 1.135, 0.55, 8)); });
-    const card = K.label('DEVELOP · FIX · WASH · DRY', { w: 0.34, h: 0.08, color: '#2b1d12', bg: '#efe3c6', size: 0.5 }); card.position.set(0.9, 1.03, 0.62); card.rotation.x = -0.35; g.add(card);
+    g.add(K.cyl(0.09, 0.09, 0.025, K.MAT.black, -0.15, 0.975, 0.55, 24));
+    const card = K.label('FOCUS / CAPTURE / REVIEW', { w: 0.7, h: 0.09, color: '#c7d5e0', bg: '#17212b', size: 0.45 });
+    card.position.set(0.9, 1.03, 0.62); card.rotation.x = -0.35; g.add(card);
   };
 
   /* ---------- a stall ---------- */
@@ -387,12 +386,12 @@ export function buildScene() {
     g.add(K.box(3.2, 2.7, 0.15, WOOD, 0, 1.35, -0.7));
     if (!big) for (let s = 0; s < 3; s += 1) { g.add(K.box(2.8, 0.03, 0.3, WOOD, 0, 1.1 + s * 0.45, -0.5)); for (let b = 0; b < 7; b += 1) g.add(K.cyl(0.04, 0.04, 0.2 + (b % 3) * 0.05, PLASTIC([0x8a2a1a, 0x2a6a3a, 0xd4a040, 0x3a4a8a][(b + s) % 4]), -1.2 + b * 0.4, 1.22 + s * 0.45, -0.5, 10)); }
     const awning = K.box(3.5, 0.04, 1.8, new THREE.MeshStandardMaterial({ map: stripe, roughness: 0.9, side: THREE.DoubleSide }), 0, 2.4, 0.35); awning.rotation.x = 0.22; g.add(awning);
-    g.add(K.box(3.5, 0.18, 0.03, PLASTIC(color), 0, 2.1, 1.22));
+    const valance = K.box(3.5, 0.18, 0.03, PLASTIC(color), 0, 2.1, 1.22); g.add(valance);
     [-1.65, 1.65].forEach((px) => g.add(K.cyl(0.03, 0.03, 2.2, TIN, px, 1.1, 1.15)));
     const sign = K.neon(name, { w: 2.2, h: 0.42, color, size: signSize }); sign.group.position.set(0, big ? 2.42 : 1.85, 1.24); g.add(sign.group); neons.push(sign); g.userData.sign = sign;
     for (let l = 0; l < 6; l += 1) g.add(K.led(0xffd9a0, 0.018, -1.4 + l * 0.56, 2.0, 0.9));
     const potX = big ? 1.28 : 0.7; const potR = big ? 0.17 : 0.24;
-    if (!lab) {   // a photo lab has trays and chemistry on the counter, not a pot
+    if (!lab && !bigMenu) {   // the noodle kitchen supplies its own two cooking pans
       g.add(K.cyl(potR, potR * 0.85, 0.3, TIN, potX, 1.1, 0.35, 20)); g.add(K.cyl(potR - 0.02, potR - 0.02, 0.02, K.MAT.black, potX, 1.26, 0.35, 20));
       g.add(K.box(potR * 2.4, 0.1, 0.5, K.MAT.darkSteel, potX, 0.98, 0.35));
     }
@@ -401,6 +400,7 @@ export function buildScene() {
     g.add(K.box(0.5, 0.4, 0.5, WOOD, -1.9, 0.2, 1.1)); g.add(K.box(0.5, 0.4, 0.5, WOOD, -1.9, 0.6, 1.1).rotateY(0.2));
     const lamp = K.pointLight(0xffc890, 3.5, 5.5, 0, 2.0, 0.8); g.add(lamp); stallLights.push(lamp); g.userData.lamp = lamp;
     const hang = new THREE.Mesh(lanternGeo, PAPER(0xff4a2a, 1.3)); hang.position.set(1.5, 1.95, 1.2); g.add(hang); lanterns.push({ mesh: hang, k: 0, seed: Math.random() * 10 });
+    if (lab) g.userData.foreground = [awning, valance, sign.group, hang];
     if (big) {
       // a lit board hung on two chains from the awning bar, big enough to read from the alley: the menu, a project's board, or the lab's lightbox (set right, so the prints hang clear of it)
       const bw = bigMenu ? 2.7 : lab ? 2.0 : 1.7; const bh = bigMenu ? 1.3 : lab ? 1.15 : 1.05; const bx = lab ? 0.5 : 0; const topY = 1.85 + bh / 2;
@@ -419,12 +419,62 @@ export function buildScene() {
     else { const board = K.screen(1.0, 0.7, (ctx, w, h) => { ctx.fillStyle = '#120c08'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = color; ctx.font = `700 ${h * 0.14}px ${K.FONT}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.letterSpacing = '3px'; ctx.fillText(name, w * 0.06, h * 0.14); ctx.fillStyle = '#f0e6c8'; ctx.font = `600 ${h * 0.11}px ${K.FONT}`; ['SMALL  ·  350', 'LARGE  ·  550', 'EXTRA  ·  120', 'TEA  ·  150'].forEach((l, i) => ctx.fillText(l, w * 0.06, h * (0.36 + i * 0.16))); }, { res: 128, glow: color, glowScale: 1.1 }); board.group.position.set(-0.6, 1.75, -0.6); g.add(board.group); }
     if (banner) { const b = K.label(banner, { w: 2.6, h: 0.22, color: '#f0e6c8', bg: '#1a0e08', size: 0.6 }); b.position.set(0, 2.62, 0.95); b.rotation.x = -0.2; g.add(b); }
     // steam over the pot
-    const potSteam = lab ? null : makeSteam(g, potX, 1.3, 0.35, big ? 0.12 : 0.25, 40, 1.0, big ? 0.07 : 0.11, big ? 0.1 : 0.2);
-    if (bigMenu) g.userData.kitchen = dressNoodleBar(g, potSteam, potX);
+    if (!lab && !bigMenu) makeSteam(g, potX, 1.3, 0.35, 0.25, 40, 1.0, 0.11, 0.2);
+    if (bigMenu) { g.userData.kitchen = dressNoodleBar(g, potX); g.userData.kitchen.foreground.push(awning, valance, sign.group, hang); }
     if (lab) dressPhotoLab(g, lab);
     g.userData.id = id;
     group.add(g);
     return g;
+  };
+  // A dedicated photo studio: aluminium framing, lightbox wall, camera and softbox.
+  const photoStudio = (sh, pr, id) => {
+    const g = new THREE.Group(); g.position.set(sh.x, 0, sh.z); g.rotation.y = sh.side < 0 ? Math.PI / 2 : -Math.PI / 2;
+    const graphite = new THREE.MeshStandardMaterial({ color: 0x202832, roughness: 0.75, metalness: 0.25 });
+    const silver = new THREE.MeshStandardMaterial({ color: 0xaab5c1, roughness: 0.35, metalness: 0.7 });
+    g.add(K.box(3.5, 2.95, 0.16, graphite, 0, 1.475, -0.74));
+    g.add(K.box(3.5, 0.08, 1.85, graphite, 0, 0.04, 0.1));
+    [-1.72, 1.72].forEach((x) => {
+      g.add(K.box(0.06, 3.0, 0.07, silver, x, 1.5, 0.8));
+      g.add(K.box(0.08, 2.95, 1.55, graphite, x, 1.475, 0.02));
+    });
+    g.add(K.box(3.5, 0.07, 1.7, graphite, 0, 3.0, 0.05));
+    const sign = K.neon('STUDIO 03', { w: 2.5, h: 0.34, color: '#cee8ff', size: 0.7 });
+    sign.group.position.set(0, 2.78, 0.86); g.add(sign.group); neons.push(sign);
+    const caption = K.label('IMAGE CONVERTER PRO / PHOTO SESSIONS', { w: 2.5, h: 0.12, color: '#a8bdcf', bg: '#141c25', size: 0.45 }); caption.position.set(0, 2.52, 0.85); g.add(caption);
+    // A steel equipment desk with equipment drawers, instead of a serving counter.
+    g.add(K.box(3.05, 0.83, 0.72, graphite, 0, 0.48, 0.35));
+    g.add(K.box(3.15, 0.06, 0.84, silver, 0, 0.93, 0.35));
+    [-1.0, 0, 1.0].forEach((x) => {
+      g.add(K.box(0.92, 0.56, 0.025, K.MAT.panel, x, 0.51, 0.725));
+      g.add(K.box(0.24, 0.018, 0.035, silver, x, 0.72, 0.755));
+    });
+    const deskLabel = K.label('PHOTO SESSIONS  /  CONTACT SHEETS  /  DIGITAL EXPORT', { w: 2.7, h: 0.09, color: '#c7d5e0', bg: '#17212b', size: 0.5 }); deskLabel.position.set(0, 0.21, 0.75); g.add(deskLabel);
+    const board = K.screen(2.0, 1.15, labBoardPainter(pr), { res: 1400, glow: '#8cbfe8', glowScale: 1.03, intensity: 1.2 });
+    board.mesh.material.roughness = 1; board.mesh.material.metalness = 0; board.tex.anisotropy = 8;
+    board.group.position.set(0.5, 1.85, -0.55); g.add(board.group);
+    g.add(K.box(2.1, 1.25, 0.055, silver, 0.5, 1.85, -0.59));
+    const lamp = K.pointLight(0xe2edff, 3.5, 5.5, 0, 2.5, 0.8); g.add(lamp); stallLights.push(lamp);
+    // Octagonal softbox on a stand, and a camera with a lens on a tripod.
+    const equipment = new THREE.Group(); g.add(equipment);
+    const stand = (x, z, height) => {
+      equipment.add(K.cyl(0.018, 0.022, height, silver, x, height / 2, z, 10));
+      [-1, 1].forEach((side) => { const leg = K.cyl(0.012, 0.012, 0.48, silver, x + side * 0.12, 0.22, z, 8); leg.rotation.z = side * 0.6; equipment.add(leg); });
+      const rear = K.cyl(0.012, 0.012, 0.48, silver, x, 0.22, z - 0.12, 8); rear.rotation.x = -0.6; equipment.add(rear);
+    };
+    stand(-1.42, 1.15, 2.18);
+    const softbox = K.cyl(0.31, 0.25, 0.15, K.MAT.black, -1.42, 2.18, 1.15, 8); softbox.rotation.x = Math.PI / 2; equipment.add(softbox);
+    const diffuser = K.cyl(0.285, 0.285, 0.012, new THREE.MeshBasicMaterial({ color: 0xe1edff }), -1.42, 2.18, 1.235, 8); diffuser.rotation.x = Math.PI / 2; equipment.add(diffuser);
+    stand(-0.85, 1.2, 1.42);
+    equipment.add(K.box(0.46, 0.3, 0.23, K.MAT.black, -0.85, 1.47, 1.2));
+    equipment.add(K.box(0.15, 0.08, 0.14, graphite, -0.85, 1.66, 1.19));
+    equipment.add(K.box(0.075, 0.035, 0.07, silver, -0.69, 1.64, 1.2));
+    studioLens = K.cyl(0.12, 0.13, 0.24, silver, -0.85, 1.47, 1.4, 32); studioLens.rotation.x = Math.PI / 2; equipment.add(studioLens);
+    studioGlass = K.cyl(0.105, 0.105, 0.012, new THREE.MeshStandardMaterial({ color: 0x25465c, roughness: 0.08, metalness: 0.8 }), -0.85, 1.47, 1.525, 32); studioGlass.rotation.x = Math.PI / 2; equipment.add(studioGlass);
+    const flash = K.box(0.17, 0.07, 0.04, new THREE.MeshBasicMaterial({ color: 0xe1edff }), -0.85, 1.76, 1.23); equipment.add(flash);
+    shutterLight = K.pointLight(0xd6eaff, 0, 4, -0.85, 1.76, 1.4); equipment.add(shutterLight);
+    dressPhotoLab(g, LAB_PRINTS);
+    g.userData = { sign, board, lamp, id, foreground: [equipment] };
+    group.add(g); return g;
   };
   const menuPainter = (ctx, w, h) => {
     ctx.fillStyle = '#120d08'; ctx.fillRect(0, 0, w, h);
@@ -437,41 +487,18 @@ export function buildScene() {
     ctx.fillStyle = '#8a94a8'; ctx.font = `600 ${h * 0.036}px ${K.FONT}`; ctx.letterSpacing = '4px';
     ctx.fillText('SAMATHRI ABHAYAPALA \u00b7 AI FULL-STACK DEVELOPER \u00b7 EVERYTHING COOKED TO ORDER', w / 2, h * 0.17);
     ctx.textAlign = 'left';
-    const colX = [w * 0.05, w * 0.4, w * 0.72];
-    const layout = [[0], [1, 2], [3]];   // MAINS | SIDES + DESIGN | AI SPECIALS
-    layout.forEach((secs, c) => {
-      let y = h * 0.27;
-      secs.forEach((si) => {
-        const sec = MENU[si];
-        ctx.fillStyle = sec.color; ctx.font = `800 ${h * 0.055}px ${K.FONT}`; ctx.letterSpacing = '5px';
-        ctx.fillText(sec.title, colX[c], y);
-        ctx.fillRect(colX[c], y + h * 0.035, w * 0.06, 3);
-        y += h * 0.085;
-        sec.items.forEach(([name, note]) => {
-          ctx.fillStyle = '#f4ecd8'; ctx.font = `700 ${h * 0.056}px ${K.FONT}`; ctx.letterSpacing = '2px';
-          ctx.fillText(name, colX[c], y);
-          const nw = ctx.measureText(name).width;
-          ctx.font = `500 ${h * 0.036}px ${K.FONT}`; ctx.letterSpacing = '1px';
-          const noteW = ctx.measureText(note.toUpperCase()).width;
-          const colW = c === 0 ? w * 0.3 : w * 0.24;
-          if (nw + noteW + 40 <= colW) {
-            ctx.fillStyle = 'rgba(212,160,64,0.45)';
-            for (let dx = colX[c] + nw + 14; dx < colX[c] + colW - noteW - 14; dx += 12) ctx.fillRect(dx, y + 4, 4, 4);
-            ctx.fillStyle = '#b8c0cc'; ctx.textAlign = 'right'; ctx.fillText(note.toUpperCase(), colX[c] + colW, y + 3); ctx.textAlign = 'left';
-            y += h * 0.078;
-          } else {
-            ctx.fillStyle = '#b8c0cc'; ctx.fillText(note.toUpperCase(), colX[c], y + h * 0.045);
-            y += h * 0.1;
-          }
-        });
-        y += h * 0.05;
-      });
-      if (c === 2) {
-        ctx.fillStyle = '#d4a040'; ctx.font = `800 ${h * 0.045}px ${K.FONT}`; ctx.letterSpacing = '4px'; ctx.fillText("CHEF'S NOTE", colX[2], y + h * 0.02);
-        ctx.fillStyle = '#b8c0cc'; ctx.font = `500 ${h * 0.032}px ${K.FONT}`; ctx.letterSpacing = '0.5px';
-        ['EVERY DISH IS REVIEWED', 'BEFORE IT LEAVES THE KITCHEN', 'BRIEFED \u00b7 BUILT \u00b7 CHECKED', 'AND ONLY THEN SHIPPED.'].forEach((l, i) => ctx.fillText(l, colX[2], y + h * (0.09 + i * 0.055)));
-      }
+    COURSES.forEach((dish, i) => {
+      const x = w * (i % 2 === 0 ? 0.065 : 0.54); const y = h * (i < 2 ? 0.3 : 0.62);
+      ctx.fillStyle = dish.css; ctx.font = `800 ${h * 0.064}px ${K.FONT}`; ctx.letterSpacing = '3px';
+      ctx.fillText(`0${i + 1}  ${dish.name.toUpperCase()}`, x, y, w * 0.4);
+      ctx.fillStyle = '#d4a040'; ctx.font = `700 ${h * 0.033}px ${K.FONT}`; ctx.letterSpacing = '2px';
+      ctx.fillText(dish.category.toUpperCase() + (dish.cook === 'wok' ? ' / WOK-FIRED' : ' / BROTH BOWL'), x, y + h * 0.065, w * 0.4);
+      ctx.fillStyle = '#f4ecd8'; ctx.font = `600 ${h * 0.038}px ${K.FONT}`; ctx.letterSpacing = '1px';
+      const rows = dish.items.length > 4 ? [dish.items.slice(0, 3), dish.items.slice(3)] : [dish.items];
+      rows.forEach((row, j) => ctx.fillText(row.join(' · '), x, y + h * (0.13 + j * 0.06), w * 0.4));
     });
+    ctx.textAlign = 'center'; ctx.fillStyle = '#8a94a8'; ctx.font = `600 ${h * 0.032}px ${K.FONT}`;
+    ctx.fillText('PICK A DISH · WATCH THE SKILLS GO IN · FRESHLY BUILT', w / 2, h * 0.92);
   };
   const noodles = stall({ x: -3.5, z: -9.2, side: -1, name: 'NOODLES', color: CYAN, bigMenu: menuPainter, id: 'skills' });
   const menuBoard = noodles.userData.board;
@@ -485,14 +512,14 @@ export function buildScene() {
   SHOPS.forEach((sh, i) => {
     const pr = PROJECTS[i];
     const g = pr.lab
-      ? stall({ x: sh.x, z: sh.z, side: sh.side, name: pr.name, color: K.hex(pr.color), poster: labBoardPainter(pr), lab: LAB_PRINTS, signSize: 0.5, id: `project:${i}` })
+      ? photoStudio(sh, pr, `project:${i}`)
       : stall({ x: sh.x, z: sh.z, side: sh.side, name: pr.name, color: K.hex(pr.color), poster: shopBoardPainter(pr), id: `project:${i}` });
     projectStalls.push({ g, sign: g.userData.sign, lamp: g.userData.lamp, board: g.userData.board, k: 0, s: sh });
     if (pr.lab) labStall = g;
   });
-  // the lightbox repaints as each of its frames arrives; the page pins the "how it works" hotspot to the developing trays on the counter
+  // the lightbox repaints as each of its frames arrives; the page pins the "how it works" hotspot to the camera on its tripod
   labImages.forEach((im) => { im.addEventListener('load', () => { if (labStall) labStall.userData.board.redraw(0); }); im.src = im.dataset.src; });
-  if (labStall) { labStall.updateMatrixWorld(true); anchors.lab = labStall.localToWorld(new THREE.Vector3(-0.85, 1.12, 0.5)); }
+  if (labStall) { labStall.updateMatrixWorld(true); anchors.lab = labStall.localToWorld(new THREE.Vector3(-0.85, 1.5, 1.4)); }
   const focusLight = K.pointLight(0xffb060, 0, 6, 0, 2.5, -17); group.add(focusLight);   // over the shop we stand at
 
   /* ---------- wall neon ---------- */
@@ -563,7 +590,7 @@ export function buildScene() {
 
   /* ---------- behaviour ---------- */
   let hover = null; let ringK = 0; let ringing = false; let activeProject = -1;
-  let cooking = null; let lastT = 0;   // an order on the go: { dish, t0, ings, total, onStep, onDone }
+  let cooking = null; let plated = false; let cookNarrow = false; let cookStation = 0; let lastT = 0;   // an order on the go: { dish, t0, ings, total, onStep, onDone }
   let rainK = 1; let rainTarget = 1;   // how hard it rains, 0 to 1: follows the weather
   const cam = { w: 0, eye: new THREE.Vector3(), look: new THREE.Vector3() };   // the close-up over the bench while an order cooks
   const vTarget = new THREE.Vector3();
@@ -574,11 +601,38 @@ export function buildScene() {
     const k = kitchen; if (!k) return;
     Object.values(k.bowls).forEach((b) => { b.group.position.copy(b.home); b.group.rotation.z = 0; });
     k.bits.forEach((m) => { m.visible = false; }); k.drop.visible = false;
-    k.wok.flames.forEach((f) => f.scale.setScalar(1)); k.wok.fire.userData.boost = 1; k.wok.mesh.rotation.z = 0;
+    [k.wok, k.pot].forEach((pan) => { pan.flames.forEach((f) => f.scale.setScalar(1)); pan.fire.userData.boost = 1; pan.mesh.rotation.z = 0; pan.fry.position.y = 1.12; });
     [k.wok.steam, k.pot.steam].forEach((st) => { st.pts.material.opacity = st.base; st.pts.material.size = st.size0; });
   };
+  const cookCamera = (narrow = cookNarrow) => {
+    cookNarrow = narrow; kitchen.g.updateMatrixWorld(true);
+    kitchen.foreground.forEach(node => { node.visible = false; });
+    kitchen.cookLight.position.x = 0.5 + cookStation; kitchen.cookLight.intensity = 3.5;
+    kitchen.g.localToWorld(narrow ? cam.eye.set(0.2 + cookStation, 1.95, 2.7) : cam.eye.set(0.25 + cookStation, 1.95, 2.05));
+    kitchen.g.localToWorld(narrow ? cam.look.set(0.2 + cookStation, 0.35, -0.1) : cam.look.set(0.55 + cookStation, 1.0, -0.08));
+  };
+  const labCamera = (view, narrow = false) => {
+    if (!labStall) return;
+    labStall.updateMatrixWorld(true);
+    labPrints.forEach((p) => { p.group.visible = view !== 'print'; });
+    labStall.userData.foreground.forEach((node) => { node.visible = view !== 'print'; });
+    if (view === 'bench') {
+      labStall.localToWorld(narrow ? cam.eye.set(-0.7, 2.0, 3.7) : cam.eye.set(-0.05, 1.9, 3.4));
+      labStall.localToWorld(narrow ? cam.look.set(-0.7, 0.2, 0.25) : cam.look.set(-0.05, 1.55, 0.1));
+    } else {
+      labStall.localToWorld(narrow ? cam.eye.set(0.5, 1.65, 4.3) : cam.eye.set(1.08, 1.82, 2.15));
+      labStall.localToWorld(narrow ? cam.look.set(0.5, 0.3, -0.55) : cam.look.set(1.08, 1.8, -0.55));
+    }
+  };
+  const clearCapture = () => {
+    captureJob = null;
+    if (studioLens) studioLens.position.z = 1.4;
+    if (studioGlass) studioGlass.position.z = 1.525;
+    if (shutterLight) shutterLight.intensity = 0;
+  };
+
   return {
-    group, menuBoard, anchors, cam,
+    group, menuBoard, anchors, cam, labCamera, cookCamera,
     update(t, dt) {
       const e = 1 - Math.exp(-6 * dt); lastT = t;
       for (let i = 0; i < neons.length; i += 1) neons[i].flicker(t * (0.7 + (i % 5) * 0.13) + i);
@@ -593,42 +647,57 @@ export function buildScene() {
       for (let i = 0; i < steams.length; i += 1) { const s = steams[i]; for (let j = 0; j < s.n; j += 1) { s.arr[j * 3 + 1] += dt * 0.35; s.arr[j * 3] += Math.sin(t * 2 + j) * dt * 0.05; if (s.arr[j * 3 + 1] > s.y1) { s.arr[j * 3 + 1] = s.y0; s.arr[j * 3] = s.x0 + (Math.random() - 0.5) * s.spread; s.arr[j * 3 + 2] = s.z0 + (Math.random() - 0.5) * s.spread; } } s.pts.geometry.attributes.position.needsUpdate = true; }
       for (let i = 0; i < fires.length; i += 1) fires[i].intensity = (1.2 + 0.9 * (0.5 + 0.5 * Math.sin(t * 21 + i * 3)) * (0.6 + 0.4 * Math.sin(t * 6.1 + i))) * (fires[i].userData.boost || 1);
       for (let i = 0; i < labPrints.length; i += 1) { const p = labPrints[i]; p.group.rotation.z = Math.sin(t * 0.9 + p.seed) * 0.035; p.group.rotation.x = Math.sin(t * 0.6 + p.seed) * 0.02; }
-      // the safelight: a flicker normally; while a frame develops on the lightbox it swells and breathes
-      if (labLamp) labLamp.intensity = 1.1 + 0.2 * Math.sin(t * 7.3) * Math.sin(t * 1.9) + (labView.on ? 1.2 + 0.6 * Math.sin(t * 2.4) : 0);
+      // A steady task light keeps the studio equipment visible.
+      if (labLamp) labLamp.intensity = labView.on ? 1.8 : 1.2;
       if (labView.img && labStall && labView.a < 1) { labView.a = Math.min(1, labView.a + dt / 0.7); labStall.userData.board.redraw(t); }   // counted in frames, so a paused tab never leaves it half developed
+      if (captureJob) {
+        const job = captureJob; job.elapsed += dt;
+        const u = job.elapsed; const stage = u < 1.8 ? 0 : u < 2.25 ? 1 : 2;
+        if (stage !== job.stage) {
+          job.stage = stage;
+          job.onStep?.(stage, ['Finding focus. Hold the frame…', 'Shutter released. Shot captured.', 'Opening your contact sheet…'][stage]);
+        }
+        const focus = u < 1.8 ? Math.sin(u / 1.8 * Math.PI) * 0.06 : 0;
+        studioLens.position.z = 1.4 + focus; studioGlass.position.z = 1.525 + focus;
+        shutterLight.intensity = u >= 1.8 && u < 2.05 ? 3 * Math.sin((u - 1.8) / 0.25 * Math.PI) : 0;
+        if (u >= 3.3) { clearCapture(); job.onDone?.(); }
+      }
       if (cooking) {
         // an order: the camera comes in over the bench, each ingredient bowl is picked up and tipped into the pan,
         // the noodles go in, the fire flares, a stir, a burst of steam, then the bowl pops up on the counter
-        const k = kitchen; const c = cooking; const u = t - c.t0; const onWok = c.dish.cook === 'wok'; const at = onWok ? k.wok : k.pot;
+        const k = kitchen; const c = cooking; c.elapsed = c.reduced ? c.total : Math.min(c.total, c.elapsed + dt); const u = c.elapsed; const onWok = c.dish.cook === 'wok'; const at = onWok ? k.wok : k.pot;
         const bump = (a, b) => (u < a || u > b ? 0 : Math.sin((Math.PI * (u - a)) / (b - a)));
-        cam.w = Math.min(K.smooth(u / 0.8), 1 - K.smooth((u - (c.total - 0.9)) / 0.9));
-        const T0 = 0.9; const STEP = 0.8;
+        cam.w = c.reduced ? 1 : Math.min(1, cam.w + dt * 1.3);
+        const T0 = COOK_TIMING.prep; const STEP = COOK_TIMING.ingredient;
         c.ings.forEach((ing, i) => {
           const sN = (u - (T0 + i * STEP)) / STEP; const bowl = k.bowls[ing.name]; const b = bowl.group;
-          if (sN <= 0 || sN >= 1) { b.position.copy(bowl.home); b.rotation.z = 0; return; }
+          if (c.reduced || sN <= 0 || sN >= 1) { b.position.copy(bowl.home); b.rotation.z = 0; return; }
           vTarget.set(at.x + 0.08, 1.4, at.z + 0.02);
+          if (!ing.announced) { ing.announced = true; c.onCue?.({ phase: 'adding', index: i }); if (c.onStep) c.onStep(`Adding ${ing.name} · ingredient ${i + 1} of ${c.ings.length}`); }
           if (sN < 0.45) { const f = K.smooth(sN / 0.45); b.position.lerpVectors(bowl.home, vTarget, f); b.position.y += Math.sin(f * Math.PI) * 0.22; b.rotation.z = 0; }
           else if (sN < 0.7) { b.position.copy(vTarget); b.rotation.z = -1.3 * Math.sin(((sN - 0.45) / 0.25) * Math.PI); if (!ing.poured && sN > 0.5) { ing.poured = true; pour(k, ing.color, at); if (c.onStep) c.onStep(`Adding ${ing.name}\u2026`); } }
           else { const f = K.smooth((sN - 0.7) / 0.3); b.position.lerpVectors(vTarget, bowl.home, f); b.position.y += Math.sin(f * Math.PI) * 0.15; b.rotation.z = 0; }
         });
         for (let i = 0; i < k.bits.length; i += 1) { const m = k.bits[i]; if (!m.visible) continue; m.userData.vy -= dt * 4; m.position.y += m.userData.vy * dt; m.position.x += m.userData.vx * dt; m.position.z += m.userData.vz * dt; m.rotation.x += dt * 6; if (m.position.y < m.userData.floor) m.visible = false; }
         const tn = T0 + c.ings.length * STEP;   // the noodles go in
-        if (!c.noodlesSaid && u >= tn) { c.noodlesSaid = true; if (c.onStep) c.onStep(onWok ? 'Noodles into the wok, high heat\u2026' : 'Noodles into the pot, let it simmer\u2026'); }
-        const heat = bump(tn - 0.2, tn + 2.6);
-        k.wok.flames.forEach((f, i) => f.scale.setScalar(1 + (onWok ? 2.2 : 0.5) * heat * (0.8 + 0.2 * Math.sin(t * 30 + i))));
-        k.wok.fire.userData.boost = 1 + (onWok ? 3 : 0.6) * heat;
-        if (u >= tn && u < tn + 0.6) { const f = (u - tn) / 0.6; k.drop.visible = true; k.drop.position.set(at.x, 1.9 - 0.75 * f * f, at.z); k.drop.rotation.y = f * 3; } else k.drop.visible = false;
-        if (u >= tn + 0.6 && u < tn + 2.2) { k.wok.fry.rotation.y += dt * (onWok ? 9 : 2); k.wok.mesh.rotation.z = onWok ? Math.sin(t * 18) * 0.07 : 0; k.pot.ladle.rotation.z = 0.5 + (onWok ? 0 : Math.sin(t * 10) * 0.2); }
-        else { k.wok.mesh.rotation.z *= 0.9; k.pot.ladle.rotation.z += (0.5 - k.pot.ladle.rotation.z) * e; }
+        if (!c.noodlesSaid && u > tn) { c.noodlesSaid = true; c.onCue?.({ phase: 'sizzle', index: c.ings.length }); if (c.onStep) c.onStep(onWok ? 'Noodles into the wok, high heat\u2026' : 'Noodles into the pot, let it simmer\u2026'); }
+        const heat = c.reduced ? 0 : bump(tn, tn + 2.6);
+        at.flames.forEach((f, i) => f.scale.setScalar(1 + 2.2 * heat * (0.8 + 0.2 * Math.sin(t * 30 + i))));
+        at.fire.userData.boost = 1 + 3 * heat;
+        if (!c.reduced && u > tn && u < tn + 0.6) { const f = (u - tn) / 0.6; k.drop.visible = true; k.drop.position.set(at.x, 1.9 - 0.75 * f * f, at.z); k.drop.rotation.y = f * 3; } else k.drop.visible = false;
+        if (u >= tn + 0.6 && u < tn + 2.2) { at.fry.rotation.y += dt * 6; at.fry.position.y = 1.12 + (!c.reduced ? Math.abs(Math.sin((u - tn - 0.6) * Math.PI * 2)) * 0.3 : 0); at.mesh.rotation.z = !c.reduced ? Math.sin((u - tn) * 9) * 0.14 : 0; }
+        else { at.fry.position.y = 1.12; at.mesh.rotation.z *= 0.9; }
         const puff = bump(tn + 0.5, tn + 2.6);
         at.steam.pts.material.opacity = at.steam.base + 0.3 * puff; at.steam.pts.material.size = at.steam.size0 * (1 + 0.9 * puff);
         if (u >= tn + 2.2) {
-          if (!c.servedSaid) { c.servedSaid = true; if (c.onStep) c.onStep('Plating up\u2026'); }
+          if (!c.servedSaid) { c.servedSaid = true; c.onCue?.({ phase: 'plating' }); if (c.onStep) c.onStep('Plating up\u2026'); }
           const f = Math.min(1, (u - (tn + 2.2)) / 0.5); const sc = f < 0.6 ? (f / 0.6) * 1.15 : 1.15 - 0.15 * ((f - 0.6) / 0.4);
-          k.served.group.visible = true; k.served.group.scale.setScalar(Math.max(0.001, sc)); if (k.tag) k.tag.visible = true;
+          k.served.group.visible = true; k.served.group.scale.setScalar(Math.max(0.001, sc * 1.45)); k.served.group.position.z = 0.28 + K.smooth(f) * 0.4; if (k.tag) k.tag.visible = true;
         }
-        if (u >= c.total) { const done = c.onDone; cooking = null; resetKitchen(); cam.w = 0; if (done) done(); }
-      } else if (labView.on) cam.w = Math.min(1, cam.w + dt * 1.1);   // the contact sheet: close on the lab's lightbox
+        if (u >= c.total) { const done = c.onDone; cooking = null; plated = true; resetKitchen(); if (done) done(); }
+
+      } else if (plated) cam.w = Math.min(1, cam.w + dt * 1.3);
+      else if (labView.on) cam.w = Math.min(1, cam.w + dt * 1.1);   // the contact sheet: close on the lab's lightbox
       else if (cam.w > 0) cam.w = Math.max(0, cam.w - dt * 1.5);
       rain.uniforms.uT.value = t;
       // the weather: the rain eases in or out, the puddles fade and the asphalt dries
@@ -645,37 +714,47 @@ export function buildScene() {
     setRain(k, immediate = false) { rainTarget = Math.min(1, Math.max(0, k)); if (immediate) rainK = rainTarget; },
     get rain() { return rainK; },
     ring(on) { ringing = !!on; },
-    cook(i, { narrow = false, onStep = null, onDone = null } = {}) {
+    cook(i, { narrow = false, reduced = false, onCue = null, onStep = null, onDone = null } = {}) {
       const dish = COURSES[i]; const k = kitchen;
-      resetKitchen();
+      plated = false; cookStation = dish.cook === 'pot' ? 0.73 : 0; resetKitchen();
+      k.served.group.position.x = 0.55 + cookStation;
       k.served.group.visible = false; k.served.group.scale.setScalar(0.001);
       k.served.broth.visible = !!dish.broth; if (dish.broth) k.served.broth.material.color.set(dish.broth);
       k.served.noodle.material.color.set(dish.noodle);
-      if (k.tag) { k.g.remove(k.tag); k.tag.material.map.dispose(); k.tag.material.dispose(); }
+      if (dish.broth) k.pot.soup.material.color.set(dish.broth);
+      if (k.tag) { k.g.remove(k.tag); k.tag.material.map.dispose(); k.tag.material.dispose(); k.tag.geometry.dispose(); }
       k.tag = K.label('ORDER UP \u00b7 ' + dish.name.toUpperCase(), { w: 0.44, h: 0.1, color: '#2b1d12', bg: '#efe3c6', size: 0.5 });
-      k.tag.position.set(k.served.group.position.x, 1.33, k.served.group.position.z); k.tag.visible = false; k.g.add(k.tag);
+      k.tag.position.set(k.served.group.position.x, 1.42, 0.68); k.tag.visible = false; k.g.add(k.tag);
       const ings = dish.items.map((name) => ({ name, color: dish.color, poured: false }));
-      const total = 0.9 + ings.length * 0.8 + 3.7;
+      const total = COOK_TIMING.prep + ings.length * COOK_TIMING.ingredient + COOK_TIMING.finish;
       k.g.updateMatrixWorld(true);
-      k.g.localToWorld(narrow ? cam.eye.set(0.3, 2.0, 2.0) : cam.eye.set(0.35, 1.85, 1.35)); k.g.localToWorld(cam.look.set(0.3, 0.98, -0.2));
-      cooking = { dish, t0: lastT, ings, total, onStep, onDone, noodlesSaid: false, servedSaid: false };
+      cookCamera(narrow);
+      cooking = { dish, elapsed: 0, reduced, ings, total, onCue, onStep, onDone, noodlesSaid: false, servedSaid: false };
       return total;
     },
-    abortCook() { if (!cooking) return; cooking = null; resetKitchen(); },
+    abortCook() {
+      cooking = null; plated = false; resetKitchen();
+      kitchen.foreground.forEach(node => { node.visible = true; }); kitchen.cookLight.intensity = 0;
+      kitchen.served.group.visible = false; if (kitchen.tag) kitchen.tag.visible = false;
+    },
+    capturePhoto({ narrow = false, reduced = false, onStep = null, onDone = null } = {}) {
+      clearCapture(); labView.img = null; labStall.userData.board.redraw(0); labCamera('bench', narrow);
+      if (reduced) { onDone?.(); return; }
+      captureJob = { elapsed: 0, stage: -1, onStep, onDone };
+    },
+    abortCapture: clearCapture,
     // the contact sheet: the camera comes in on the lab's lightbox (set to the left of the frame on a wide screen so the
     // note fits beside it; straight on and higher on a phone so the note fits below), and the lightbox shows one frame
     labMode(on, { narrow = false } = {}) {
       if (!labStall) return;
       labView.on = on;
       if (on) {
-        labStall.updateMatrixWorld(true);
-        if (narrow) { labStall.localToWorld(cam.eye.set(0.5, 1.5, 2.5)); labStall.localToWorld(cam.look.set(0.5, 1.42, -0.55)); }
-        else { labStall.localToWorld(cam.eye.set(1.18, 1.82, 1.85)); labStall.localToWorld(cam.look.set(1.18, 1.8, -0.55)); }   // close: the lightbox takes about six tenths of the width
-      } else { labView.img = null; labStall.userData.board.redraw(0); }
+        labView.img = null; labStall.userData.board.redraw(0); labCamera('bench', narrow);
+      } else { clearCapture(); labPrints.forEach((p) => { p.group.visible = true; }); labStall.userData.foreground.forEach((node) => { node.visible = true; }); labView.img = null; labStall.userData.board.redraw(0); }
     },
-    labFrame(img, { no = '', title = '', total = labView.total } = {}) {
+    labFrame(img, { no = '', title = '', total = labView.total, instant = false } = {}) {
       if (!labStall) return;
-      labView.img = img; labView.no = no; labView.title = title; labView.total = total; labView.a = 0;
+      labView.img = img; labView.no = no; labView.title = title; labView.total = total; labView.a = instant ? 1 : 0;
       labStall.userData.board.redraw(lastT);
     },
     labTotal(n) { labView.total = n; if (labStall && !labView.img) labStall.userData.board.redraw(0); },
